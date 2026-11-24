@@ -1,0 +1,318 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net (Default Deny Catch-All)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ---------- Global Security Primitives ----------
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    function incoming() {
+      return request.resource.data;
+    }
+    function existing() {
+      return resource.data;
+    }
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    function isBootstrappedAdmin() {
+      return isVerified() && request.auth.token.email == 'growthloopp@gmail.com';
+    }
+    function isAdmin() {
+      return isBootstrappedAdmin() || (
+        isVerified() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // ---------- Validation Blueprints ----------
+    function isValidSiteConfig(data, configId) {
+      return data.keys().hasAll(['id', 'updatedAt']) &&
+        data.keys().hasOnly([
+          'id', 'brand', 'contact', 'social', 'announcement', 'widgets',
+          'hero', 'ratings', 'steps', 'how_it_works', 'why_choose',
+          'home_copy', 'home_sections', 'evaluation_risk', 'trust',
+          'video_reviews', 'testimonials', 'faq_groups', 'rules',
+          'about', 'benefits', 'live_counter', 'payouts_page',
+          'funding_products', 'updatedAt'
+        ]) &&
+        data.id is string && data.id == configId && data.id.size() >= 1 && data.id.size() <= 64 &&
+        data.updatedAt is timestamp && data.updatedAt == request.time &&
+        (!('brand' in data) || data.brand is map) &&
+        (!('contact' in data) || data.contact is map) &&
+        (!('social' in data) || data.social is map) &&
+        (!('announcement' in data) || data.announcement is map) &&
+        (!('widgets' in data) || data.widgets is map) &&
+        (!('hero' in data) || data.hero is map) &&
+        (!('ratings' in data) || data.ratings is map) &&
+        (!('steps' in data) || data.steps is map) &&
+        (!('how_it_works' in data) || data.how_it_works is map) &&
+        (!('why_choose' in data) || data.why_choose is map) &&
+        (!('home_copy' in data) || data.home_copy is map) &&
+        (!('home_sections' in data) || data.home_sections is map) &&
+        (!('evaluation_risk' in data) || data.evaluation_risk is map) &&
+        (!('trust' in data) || data.trust is map) &&
+        (!('video_reviews' in data) || data.video_reviews is map) &&
+        (!('testimonials' in data) || (data.testimonials is list && data.testimonials.size() <= 40)) &&
+        (!('faq_groups' in data) || (data.faq_groups is list && data.faq_groups.size() <= 20)) &&
+        (!('rules' in data) || data.rules is map) &&
+        (!('about' in data) || data.about is map) &&
+        (!('benefits' in data) || data.benefits is map) &&
+        (!('live_counter' in data) || data.live_counter is map) &&
+        (!('payouts_page' in data) || data.payouts_page is map) &&
+        (!('funding_products' in data) || data.funding_products is map);
+    }
+
+    function isValidPlanDoc(data, planId) {
+      return data.keys().hasAll(['id', 'name', 'account_size', 'challenge_fee', 'updatedAt']) &&
+        data.keys().hasOnly([
+          'id', 'name', 'account_size', 'challenge_fee', 'profit_target_points',
+          'profit_share', 'max_loss_limit', 'min_trading_days', 'total_trading_days',
+          'trades_per_day', 'popular', 'order', 'description', 'features', 'updatedAt'
+        ]) &&
+        data.id is string && data.id == planId && data.id.size() >= 1 && data.id.size() <= 64 &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 80 &&
+        data.account_size is number && data.account_size >= 0 &&
+        data.challenge_fee is number && data.challenge_fee >= 0 &&
+        (!('profit_target_points' in data) || data.profit_target_points is number) &&
+        (!('profit_share' in data) || data.profit_share is number) &&
+        (!('max_loss_limit' in data) || data.max_loss_limit is number) &&
+        (!('min_trading_days' in data) || data.min_trading_days is number) &&
+        (!('total_trading_days' in data) || data.total_trading_days is number) &&
+        (!('trades_per_day' in data) || data.trades_per_day is number) &&
+        (!('popular' in data) || data.popular is bool) &&
+        (!('order' in data) || data.order is number) &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 600)) &&
+        (!('features' in data) || (
+          data.features is list &&
+          data.features.size() <= 15 &&
+          (data.features.size() == 0 || (data.features[0] is string && data.features[0].size() <= 200))
+        )) &&
+        data.updatedAt is timestamp && data.updatedAt == request.time;
+    }
+
+    function isValidBlogPost(data, blogId) {
+      return data.keys().hasAll(['id', 'slug', 'title', 'published', 'updatedAt']) &&
+        data.keys().hasOnly([
+          'id', 'slug', 'title', 'excerpt', 'content', 'cover_image',
+          'author', 'published', 'updatedAt'
+        ]) &&
+        data.id is string && data.id == blogId && data.id.size() >= 1 && data.id.size() <= 64 &&
+        data.slug is string && data.slug.size() >= 1 && data.slug.size() <= 140 && data.slug.matches('^[a-z0-9_\\-]+$') &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+        (!('excerpt' in data) || (data.excerpt is string && data.excerpt.size() <= 600)) &&
+        (!('content' in data) || (data.content is string && data.content.size() <= 40000)) &&
+        (!('cover_image' in data) || (data.cover_image is string && data.cover_image.size() <= 1000)) &&
+        (!('author' in data) || (data.author is string && data.author.size() <= 120)) &&
+        data.published is bool &&
+        data.updatedAt is timestamp && data.updatedAt == request.time;
+    }
+
+    function isValidCertificateDoc(data, certId) {
+      return data.keys().hasAll(['id', 'certificate_code', 'visible', 'updatedAt']) &&
+        data.keys().hasOnly([
+          'id', 'certificate_code', 'trader_name', 'amount', 'plan',
+          'account_size', 'payout_date', 'image_url', 'visible', 'updatedAt'
+        ]) &&
+        data.id is string && data.id == certId && data.id.size() >= 1 && data.id.size() <= 64 &&
+        data.certificate_code is string && data.certificate_code.size() >= 3 && data.certificate_code.size() <= 64 && data.certificate_code.matches('^[a-zA-Z0-9_\\-]+$') &&
+        (!('trader_name' in data) || (data.trader_name is string && data.trader_name.size() <= 120)) &&
+        (!('amount' in data) || data.amount is number) &&
+        (!('plan' in data) || (data.plan is string && data.plan.size() <= 80)) &&
+        (!('account_size' in data) || data.account_size is number) &&
+        (!('payout_date' in data) || (data.payout_date is string && data.payout_date.size() <= 40)) &&
+        (!('image_url' in data) || (data.image_url is string && data.image_url.size() <= 1000)) &&
+        data.visible is bool &&
+        data.updatedAt is timestamp && data.updatedAt == request.time;
+    }
+
+    function isValidUserPublicProfile(data, userId) {
+      return data.keys().hasAll(['uid', 'displayName', 'role', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['uid', 'displayName', 'role', 'createdAt', 'updatedAt']) &&
+        data.uid is string && data.uid == userId && data.uid.size() >= 1 && data.uid.size() <= 128 &&
+        data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100 &&
+        data.role is string && data.role in ['user', 'admin'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp && data.updatedAt == request.time;
+    }
+
+    function isValidUserPrivateInfo(data, userId) {
+      return data.keys().hasAll(['uid', 'email', 'kycStatus', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['uid', 'email', 'phone', 'kycStatus', 'createdAt', 'updatedAt']) &&
+        data.uid is string && data.uid == userId && data.uid.size() >= 1 && data.uid.size() <= 128 &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 200 &&
+        (!('phone' in data) || (data.phone is string && data.phone.size() <= 32)) &&
+        data.kycStatus is string && data.kycStatus in ['none', 'submitted', 'verified', 'rejected'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp && data.updatedAt == request.time;
+    }
+
+    function isValidTraderAccountDoc(data, accountId) {
+      return data.keys().hasAll([
+          'id', 'uid', 'account_number', 'plan_name', 'account_type',
+          'starting_capital', 'balance', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'uid', 'account_number', 'plan_name', 'account_type',
+          'starting_capital', 'balance', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        data.id is string && data.id == accountId && data.id.size() >= 1 && data.id.size() <= 64 &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 && data.uid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.account_number is string && data.account_number.size() >= 2 && data.account_number.size() <= 64 &&
+        data.plan_name is string && data.plan_name.size() >= 1 && data.plan_name.size() <= 80 &&
+        data.account_type is string && data.account_type in ['Challenge', 'Funded'] &&
+        data.starting_capital is number && data.starting_capital >= 0 &&
+        data.balance is number && data.balance >= 0 &&
+        data.status is string && data.status in ['Active', 'Funded', 'Passed', 'Breached', 'Suspended'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp && data.updatedAt == request.time;
+    }
+
+    function isValidAdminRecord(data, recordId) {
+      return data.keys().hasAll(['id', 'collection', 'docId', 'payload', 'updatedBy', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'collection', 'docId', 'payload', 'updatedBy', 'updatedAt']) &&
+        data.id is string && data.id == recordId && data.id.size() >= 1 && data.id.size() <= 128 &&
+        data.collection is string && data.collection in [
+          'users', 'trader_accounts', 'orders', 'payout_requests', 'coupons',
+          'weekly_payouts', 'leaderboard', 'stories', 'leads', 'support_tickets',
+          'referrals', 'fund_transactions', 'virtual_orders', 'virtual_positions',
+          'virtual_trades', 'system_meta', 'plans', 'blogs', 'certificates',
+          'league_registrations', 'risk_breaches', 'risk_events', 'settings'
+        ] &&
+        data.docId is string && data.docId.size() >= 1 && data.docId.size() <= 128 &&
+        data.payload is map &&
+        data.updatedBy is string && data.updatedBy.size() >= 3 && data.updatedBy.size() <= 200 &&
+        data.updatedAt is timestamp && data.updatedAt == request.time;
+    }
+
+    // ---------- Collection Rules ----------
+    match /test/connection {
+      allow get: if true;
+      allow list, create, update, delete: if false;
+    }
+
+    match /admins/{adminUid} {
+      allow get: if isValidId(adminUid) && (isOwner(adminUid) || isAdmin());
+      allow list, create, update, delete: if false;
+    }
+
+    match /site_config/{configId} {
+      allow get: if isValidId(configId) && (configId == 'public' || isAdmin());
+      allow list: if resource.data.id == 'public' || isBootstrappedAdmin();
+      allow create: if isValidId(configId) && isAdmin() && isValidSiteConfig(incoming(), configId);
+      allow update: if isValidId(configId) && isAdmin() && isValidSiteConfig(incoming(), configId) &&
+        incoming().id == existing().id;
+      allow delete: if isValidId(configId) && isAdmin();
+    }
+
+    match /plans/{planId} {
+      allow get: if isValidId(planId);
+      allow list: if resource.data.account_size >= 0;
+      allow create: if isValidId(planId) && isAdmin() && isValidPlanDoc(incoming(), planId);
+      allow update: if isValidId(planId) && isAdmin() && isValidPlanDoc(incoming(), planId) &&
+        incoming().id == existing().id;
+      allow delete: if isValidId(planId) && isAdmin();
+    }
+
+    match /blogs/{blogId} {
+      allow get: if isValidId(blogId) && (existing().published == true || isAdmin());
+      allow list: if resource.data.published == true || isBootstrappedAdmin();
+      allow create: if isValidId(blogId) && isAdmin() && isValidBlogPost(incoming(), blogId);
+      allow update: if isValidId(blogId) && isAdmin() && isValidBlogPost(incoming(), blogId) &&
+        incoming().id == existing().id;
+      allow delete: if isValidId(blogId) && isAdmin();
+    }
+
+    match /certificates/{certId} {
+      allow get: if isValidId(certId) && (existing().visible == true || isAdmin());
+      allow list: if resource.data.visible == true || isBootstrappedAdmin();
+      allow create: if isValidId(certId) && isAdmin() && isValidCertificateDoc(incoming(), certId);
+      allow update: if isValidId(certId) && isAdmin() && isValidCertificateDoc(incoming(), certId) &&
+        incoming().id == existing().id;
+      allow delete: if isValidId(certId) && isAdmin();
+    }
+
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if (isSignedIn() && resource.data.uid == request.auth.uid) || isBootstrappedAdmin();
+      allow create: if isValidId(userId) && isVerified() &&
+        isValidUserPublicProfile(incoming(), userId) &&
+        incoming().createdAt == request.time && (
+          isAdmin() ||
+          (isOwner(userId) && incoming().role == 'user')
+        );
+      allow update: if isValidId(userId) && isVerified() &&
+        isValidUserPublicProfile(incoming(), userId) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt && (
+          isAdmin() ||
+          (
+            isOwner(userId) &&
+            incoming().role == existing().role &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'updatedAt'])
+          )
+        );
+      allow delete: if isValidId(userId) && isAdmin();
+
+      match /private/{docId} {
+        allow get: if isValidId(userId) && isValidId(docId) && docId == 'info' && (isOwner(userId) || isAdmin());
+        allow list: if (isSignedIn() && resource.data.uid == request.auth.uid) || isBootstrappedAdmin();
+        allow create: if isValidId(userId) && isValidId(docId) && docId == 'info' && isVerified() &&
+          isValidUserPrivateInfo(incoming(), userId) &&
+          incoming().createdAt == request.time && (
+            isAdmin() ||
+            (isOwner(userId) && incoming().kycStatus == 'none')
+          );
+        allow update: if isValidId(userId) && isValidId(docId) && docId == 'info' && isVerified() &&
+          isValidUserPrivateInfo(incoming(), userId) &&
+          incoming().uid == existing().uid &&
+          incoming().createdAt == existing().createdAt && (
+            isAdmin() ||
+            (
+              isOwner(userId) &&
+              incoming().kycStatus == existing().kycStatus &&
+              incoming().diff(existing()).affectedKeys().hasOnly(['email', 'phone', 'updatedAt'])
+            )
+          );
+        allow delete: if isValidId(userId) && isValidId(docId) && isAdmin();
+      }
+    }
+
+    match /trader_accounts/{accountId} {
+      allow get: if isValidId(accountId) && (isAdmin() || (isSignedIn() && existing().uid == request.auth.uid));
+      allow list: if (isSignedIn() && resource.data.uid == request.auth.uid) || isBootstrappedAdmin();
+      allow create: if isValidId(accountId) && isAdmin() &&
+        isValidTraderAccountDoc(incoming(), accountId) &&
+        incoming().createdAt == request.time &&
+        exists(/databases/$(database)/documents/users/$(incoming().uid));
+      allow update: if isValidId(accountId) && isAdmin() &&
+        isValidTraderAccountDoc(incoming(), accountId) &&
+        incoming().id == existing().id &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        (!(existing().status in ['Breached', 'Passed']) || isAdmin());
+      allow delete: if isValidId(accountId) && isAdmin();
+    }
+
+    match /admin_records/{recordId} {
+      allow get: if isValidId(recordId) && isAdmin();
+      allow list: if isBootstrappedAdmin();
+      allow create: if isValidId(recordId) && isAdmin() && isValidAdminRecord(incoming(), recordId);
+      allow update: if isValidId(recordId) && isAdmin() && isValidAdminRecord(incoming(), recordId) &&
+        incoming().id == existing().id &&
+        incoming().collection == existing().collection &&
+        incoming().docId == existing().docId;
+      allow delete: if isValidId(recordId) && isAdmin();
+    }
+  }
+}

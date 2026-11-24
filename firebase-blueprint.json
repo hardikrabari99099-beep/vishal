@@ -1,0 +1,238 @@
+{
+  "entities": {
+    "SiteConfig": {
+      "title": "SiteConfig",
+      "description": "Public IndiFunded website branding, announcement, hero, sections, reviews, and trust display settings.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "brand": { "type": "object", "description": "Brand name, tagline, and logo assets." },
+        "contact": { "type": "object", "description": "Public support contact details and UPI display info." },
+        "social": { "type": "object", "description": "Social media links." },
+        "announcement": { "type": "object", "description": "Top announcement bar configuration." },
+        "widgets": { "type": "object", "description": "Public floating widgets configuration." },
+        "hero": { "type": "object", "description": "Landing hero text and CTA labels." },
+        "ratings": { "type": "object", "description": "Third-party rating platform cards." },
+        "steps": { "type": "object", "description": "Homepage 3-step onboarding copy." },
+        "how_it_works": { "type": "object", "description": "How it works page content and timeline." },
+        "why_choose": { "type": "object", "description": "Homepage why choose cards." },
+        "home_copy": { "type": "object", "description": "Homepage section headings and CTA labels." },
+        "home_sections": { "type": "object", "description": "Homepage section visibility switches." },
+        "evaluation_risk": { "type": "object", "description": "Published challenge evaluation and risk defaults." },
+        "trust": { "type": "object", "description": "Public trust center metadata and redacted payout proofs." },
+        "video_reviews": { "type": "object", "description": "Curated verified video review items." },
+        "testimonials": { "type": "array", "description": "Trader testimonial quotes." },
+        "faq_groups": { "type": "array", "description": "Grouped FAQ accordions." },
+        "rules": { "type": "object", "description": "Published challenge rules summary." },
+        "about": { "type": "object", "description": "About page story and mission cards." },
+        "benefits": { "type": "object", "description": "Rules page benefits list." },
+        "live_counter": { "type": "object", "description": "Homepage live counter stats." },
+        "payouts_page": { "type": "object", "description": "Public payouts page configuration." },
+        "funding_products": { "type": "object", "description": "Public challenge track catalog configuration." },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "updatedAt"]
+    },
+    "PlanDoc": {
+      "title": "PlanDoc",
+      "description": "Challenge plan configuration displayed on pricing and challenge picker.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "account_size": { "type": "number" },
+        "challenge_fee": { "type": "number" },
+        "profit_target_points": { "type": "number" },
+        "profit_share": { "type": "number" },
+        "max_loss_limit": { "type": "number" },
+        "min_trading_days": { "type": "number" },
+        "total_trading_days": { "type": "number" },
+        "trades_per_day": { "type": "number" },
+        "popular": { "type": "boolean" },
+        "order": { "type": "number" },
+        "description": { "type": "string", "maxLength": 600 },
+        "features": { "type": "array", "description": "Bounded up to 15 feature bullets." },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "account_size", "challenge_fee", "updatedAt"]
+    },
+    "BlogPost": {
+      "title": "BlogPost",
+      "description": "Published or draft editorial article.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "slug": { "type": "string", "minLength": 1, "maxLength": 140, "pattern": "^[a-z0-9_\\-]+$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "excerpt": { "type": "string", "maxLength": 600 },
+        "content": { "type": "string", "maxLength": 40000 },
+        "cover_image": { "type": "string", "maxLength": 1000 },
+        "author": { "type": "string", "maxLength": 120 },
+        "published": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "slug", "title", "published", "updatedAt"]
+    },
+    "CertificateDoc": {
+      "title": "CertificateDoc",
+      "description": "Verified trader payout certificate record.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "certificate_code": { "type": "string", "minLength": 3, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "trader_name": { "type": "string", "maxLength": 120 },
+        "amount": { "type": "number" },
+        "plan": { "type": "string", "maxLength": 80 },
+        "account_size": { "type": "number" },
+        "payout_date": { "type": "string", "maxLength": 40 },
+        "image_url": { "type": "string", "maxLength": 1000 },
+        "visible": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "certificate_code", "visible", "updatedAt"]
+    },
+    "UserPublicProfile": {
+      "title": "UserPublicProfile",
+      "description": "Non-PII trader public profile document.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "displayName", "role", "createdAt", "updatedAt"]
+    },
+    "UserPrivateInfo": {
+      "title": "UserPrivateInfo",
+      "description": "Isolated PII record containing verified email, phone, and KYC status.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "email": { "type": "string", "maxLength": 200 },
+        "phone": { "type": "string", "maxLength": 32 },
+        "kycStatus": { "type": "string", "enum": ["none", "submitted", "verified", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "kycStatus", "createdAt", "updatedAt"]
+    },
+    "TraderAccountDoc": {
+      "title": "TraderAccountDoc",
+      "description": "Trader challenge or funded trading account record.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "account_number": { "type": "string", "minLength": 2, "maxLength": 64 },
+        "plan_name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "account_type": { "type": "string", "enum": ["Challenge", "Funded"] },
+        "starting_capital": { "type": "number" },
+        "balance": { "type": "number" },
+        "status": { "type": "string", "enum": ["Active", "Funded", "Passed", "Breached", "Suspended"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "uid",
+        "account_number",
+        "plan_name",
+        "account_type",
+        "starting_capital",
+        "balance",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AdminRecordDoc": {
+      "title": "AdminRecordDoc",
+      "description": "Sanitized admin-only database snapshot record synced from the connected admin Google account.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "collection": {
+          "type": "string",
+          "enum": [
+            "users",
+            "trader_accounts",
+            "orders",
+            "payout_requests",
+            "coupons",
+            "weekly_payouts",
+            "leaderboard",
+            "stories",
+            "leads",
+            "support_tickets",
+            "referrals",
+            "fund_transactions",
+            "virtual_orders",
+            "virtual_positions",
+            "virtual_trades",
+            "system_meta",
+            "plans",
+            "blogs",
+            "certificates",
+            "league_registrations",
+            "risk_breaches",
+            "risk_events",
+            "settings"
+          ]
+        },
+        "docId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "payload": { "type": "object", "description": "Sanitized JSON document fields without secrets." },
+        "updatedBy": { "type": "string", "maxLength": 200 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "collection", "docId", "payload", "updatedBy", "updatedAt"]
+    },
+    "ConnectionProbe": {
+      "title": "ConnectionProbe",
+      "description": "Read-only connection verification document.",
+      "type": "object",
+      "properties": {
+        "ok": { "type": "boolean" }
+      }
+    }
+  },
+  "firestore": {
+    "/site_config/{configId}": {
+      "schema": { "$ref": "#/entities/SiteConfig" },
+      "description": "Public website settings managed exclusively by verified admins."
+    },
+    "/plans/{planId}": {
+      "schema": { "$ref": "#/entities/PlanDoc" },
+      "description": "Published challenge pricing tiers."
+    },
+    "/blogs/{blogId}": {
+      "schema": { "$ref": "#/entities/BlogPost" },
+      "description": "Blog articles (published posts are public; drafts are admin-only)."
+    },
+    "/certificates/{certId}": {
+      "schema": { "$ref": "#/entities/CertificateDoc" },
+      "description": "Verified payout certificates."
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserPublicProfile" },
+      "description": "Non-PII trader public profile keyed by Firebase Auth UID."
+    },
+    "/users/{userId}/private/{docId}": {
+      "schema": { "$ref": "#/entities/UserPrivateInfo" },
+      "description": "Owner- and admin-only PII record isolated from public user documents."
+    },
+    "/trader_accounts/{accountId}": {
+      "schema": { "$ref": "#/entities/TraderAccountDoc" },
+      "description": "Trader challenge and funded accounts readable only by owner or admin."
+    },
+    "/admin_records/{recordId}": {
+      "schema": { "$ref": "#/entities/AdminRecordDoc" },
+      "description": "Admin-only Google-account Cloud Firestore database mirror for full backup & restore."
+    },
+    "/test/{docId}": {
+      "schema": { "$ref": "#/entities/ConnectionProbe" },
+      "description": "Read-only startup connection probe."
+    }
+  }
+}

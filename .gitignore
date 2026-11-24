@@ -1,0 +1,28 @@
+# --- Secrets: NEVER commit these ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- Local runtime data written by the app when it runs without a database ---
+# (these can contain customer data and email passwords)
+.indifunded-store.local
+.indifunded-store.local.bak
+.indifunded-email.local
+.indifunded-media/
+
+# --- Build output & dependencies ---
+node_modules/
+dist/
+.output/
+.netlify/
+.vinxi/
+.tanstack/
+.nitro/
+*.tsbuildinfo
+
+# --- Misc ---
+.DS_Store
+*.log
+coverage/

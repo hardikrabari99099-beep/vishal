@@ -1,11 +1,21 @@
-<div align="center">
+# IndiFunded
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+Prop-trading funding site: TanStack Start (React) frontend, `/api/*` backend in `src/server/api-handler.js`,
+data in **Supabase**, hosted on **Render**.
 
-  <h1>Built with AI Studio</h2>
+## Local development
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+```sh
+cp .env.example .env     # fill in the Supabase keys
+npm i
+npm run dev
+```
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+Check the Supabase connection (read-only): `npm run check:supabase`
 
-</div>
+## Deploy (Render + Supabase)
+
+See **SETUP_GUIDE.md** (step by step), `render.yaml` (Render blueprint) and
+`supabase/migrations/` (database schema). In production the API refuses to run without
+`SUPABASE_URL` and `SUPABASE_SECRET_KEY` (override only with `ALLOW_MEMORY_STORE=true`).
+Never commit real keys; set them in the Render dashboard.
