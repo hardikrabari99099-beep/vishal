@@ -993,17 +993,24 @@ export function useLiveCandles(symbol, tf = "5m", options = {}) {
   const authoritativeBaseRef = useRef(null);
   const serverConfirmedStatusRef = useRef(null);
   const baselineTimerRef = useRef(null);
+  const emptyRetryTimerRef = useRef(null);
+  const emptyRetryCountRef = useRef(0);
   const aliveRef = useRef(true);
   const currentCacheKeyRef = useRef(cacheKey);
   currentCacheKeyRef.current = cacheKey;
 
   useEffect(() => {
     aliveRef.current = true;
+    emptyRetryCountRef.current = 0;
     return () => {
       aliveRef.current = false;
       if (baselineTimerRef.current) {
         clearTimeout(baselineTimerRef.current);
         baselineTimerRef.current = null;
+      }
+      if (emptyRetryTimerRef.current) {
+        clearTimeout(emptyRetryTimerRef.current);
+        emptyRetryTimerRef.current = null;
       }
     };
   }, [cacheKey]);
@@ -1111,17 +1118,55 @@ export function useLiveCandles(symbol, tf = "5m", options = {}) {
           );
         }
 
-        if (
-          nextCandles.length &&
-          !candlesMatch(prevCandlesRef.current, nextCandles)
-        ) {
-          prevCandlesRef.current = nextCandles;
-          setCandles(nextCandles);
-        }
         if (nextCandles.length) {
-          const authBar = { ...nextCandles[nextCandles.length - 1] };
-          authoritativeLastBarRef.current = { ...authBar };
-          liveLastBarRef.current = authBar;
+          emptyRetryCountRef.current = 0;
+          if (emptyRetryTimerRef.current) {
+            clearTimeout(emptyRetryTimerRef.current);
+            emptyRetryTimerRef.current = null;
+          }
+          const isBaseline = Boolean(data?.isBaseline);
+          const existingEntry = candleMemCache.get(cacheKey);
+          const hasExistingReal =
+            Boolean(existingEntry?.candles?.length) && !existingEntry?.isBaseline;
+          if (!isBaseline || !hasExistingReal) {
+            if (!candlesMatch(prevCandlesRef.current, nextCandles)) {
+              prevCandlesRef.current = nextCandles;
+              setCandles(nextCandles);
+            }
+            const authBar = { ...nextCandles[nextCandles.length - 1] };
+            authoritativeLastBarRef.current = { ...authBar };
+            liveLastBarRef.current = authBar;
+            candleMemCache.set(cacheKey, {
+              candles: nextCandles,
+              quote: data?.quote || null,
+              marketStatus: data?.marketStatus || lastMarketStatus,
+              isBaseline,
+              ts: Date.now(),
+            });
+          }
+          if (!isBaseline) {
+            baselineUpgradeAttempts.delete(cacheKey);
+            schedulePersistMarketCache();
+          } else if (typeof window !== "undefined") {
+            const attempts = baselineUpgradeAttempts.get(cacheKey) || 0;
+            if (attempts < 2 && !baselineTimerRef.current) {
+              baselineUpgradeAttempts.set(cacheKey, attempts + 1);
+              const delayMs = attempts === 0 ? 700 : 2200;
+              baselineTimerRef.current = setTimeout(() => {
+                baselineTimerRef.current = null;
+                if (aliveRef.current) fetchCandles(true);
+              }, delayMs);
+            }
+          }
+        } else if (data?.quote) {
+          const isBaseline = Boolean(data?.isBaseline);
+          candleMemCache.set(cacheKey, {
+            candles: nextCandles,
+            quote: data?.quote || null,
+            marketStatus: data?.marketStatus || lastMarketStatus,
+            isBaseline,
+            ts: Date.now(),
+          });
         }
         if (data?.quote) {
           const pq = prevQuoteRef.current;
@@ -1160,34 +1205,44 @@ export function useLiveCandles(symbol, tf = "5m", options = {}) {
             cur === data.marketStatus ? cur : data.marketStatus,
           );
         }
-        if (nextCandles.length || data?.quote) {
-          const isBaseline = Boolean(data?.isBaseline);
-          candleMemCache.set(cacheKey, {
-            candles: nextCandles,
-            quote: data?.quote || null,
-            marketStatus: data?.marketStatus || lastMarketStatus,
-            isBaseline,
-            ts: Date.now(),
-          });
-          if (!isBaseline) {
-            baselineUpgradeAttempts.delete(cacheKey);
-            schedulePersistMarketCache();
-          } else if (typeof window !== "undefined") {
-            const attempts = baselineUpgradeAttempts.get(cacheKey) || 0;
-            if (attempts < 2 && !baselineTimerRef.current) {
-              baselineUpgradeAttempts.set(cacheKey, attempts + 1);
-              const delayMs = attempts === 0 ? 700 : 2200;
-              baselineTimerRef.current = setTimeout(() => {
-                baselineTimerRef.current = null;
-                if (aliveRef.current) fetchCandles(true);
-              }, delayMs);
+        if (
+          !nextCandles.length &&
+          !prevCandlesRef.current.length &&
+          pollMs > 0 &&
+          typeof window !== "undefined" &&
+          emptyRetryCountRef.current < 2 &&
+          !emptyRetryTimerRef.current
+        ) {
+          const retryDelay = emptyRetryCountRef.current === 0 ? 1100 : 2600;
+          emptyRetryCountRef.current += 1;
+          emptyRetryTimerRef.current = setTimeout(() => {
+            emptyRetryTimerRef.current = null;
+            if (aliveRef.current && currentCacheKeyRef.current === cacheKey) {
+              fetchCandles(true);
             }
-          }
+          }, retryDelay);
         }
         setError(null);
       } catch (err) {
-        if (aliveRef.current && currentCacheKeyRef.current === cacheKey)
+        if (aliveRef.current && currentCacheKeyRef.current === cacheKey) {
           setError(err?.message || "Chart feed unavailable");
+          if (
+            !prevCandlesRef.current.length &&
+            pollMs > 0 &&
+            typeof window !== "undefined" &&
+            emptyRetryCountRef.current < 2 &&
+            !emptyRetryTimerRef.current
+          ) {
+            const retryDelay = emptyRetryCountRef.current === 0 ? 1100 : 2600;
+            emptyRetryCountRef.current += 1;
+            emptyRetryTimerRef.current = setTimeout(() => {
+              emptyRetryTimerRef.current = null;
+              if (aliveRef.current && currentCacheKeyRef.current === cacheKey) {
+                fetchCandles(true);
+              }
+            }, retryDelay);
+          }
+        }
       } finally {
         if (aliveRef.current && currentCacheKeyRef.current === cacheKey) {
           setLoading(false);
@@ -1195,7 +1250,7 @@ export function useLiveCandles(symbol, tf = "5m", options = {}) {
         }
       }
     },
-    [symbol, tf, enabled, cacheKey, chartFeedCfg.reconcile_on_api],
+    [symbol, tf, enabled, pollMs, cacheKey, chartFeedCfg.reconcile_on_api],
   );
 
   useEffect(() => {

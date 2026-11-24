@@ -323,4 +323,39 @@ describe("intraday flat settlement bar cleanup and symbol aliases", () => {
       exchange: "BSE",
     });
   });
+
+  it("collapses long contiguous zero-range runs and derives non-flat deep-OTM option candles", async () => {
+    const t0 = Math.floor(Date.parse("2026-11-23T04:00:00Z") / 1000); // 09:30 IST
+    const realBars = Array.from({ length: 24 }, (_, idx) => ({
+      i: idx,
+      time: t0 + idx * 300,
+      label: `r-${idx}`,
+      open: 1000 + idx,
+      high: 1005 + idx,
+      low: 998 + idx,
+      close: 1002 + idx,
+      volume: 1200,
+    }));
+    const flatPlateau = Array.from({ length: 8 }, (_, idx) => ({
+      i: 24 + idx,
+      time: t0 + (24 + idx) * 300,
+      label: `p-${idx}`,
+      open: 1025,
+      high: 1025,
+      low: 1025,
+      close: 1025,
+      volume: 100, // non-zero volume padding
+    }));
+    const cleaned = cleanIntradayFlatBars([...realBars, ...flatPlateau], "5m");
+    expect(cleaned.length).toBeLessThan(32);
+    expect(cleaned.length).toBeGreaterThanOrEqual(24);
+
+    const { getCandles } = await import("@/server/market-data");
+    const deepOtm = await getCandles("NIFTY32000CE", "5m");
+    expect(deepOtm.candles.length).toBeGreaterThanOrEqual(50);
+    const maxHi = Math.max(...deepOtm.candles.map((c) => c.high));
+    const minLo = Math.min(...deepOtm.candles.map((c) => c.low));
+    expect(maxHi).toBeGreaterThan(minLo);
+  });
 });
+

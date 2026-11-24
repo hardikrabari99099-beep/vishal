@@ -57,8 +57,8 @@ function normalizeCandles(candles) {
     normalized.push({
       time: t,
       open,
-      high,
-      low,
+      high: Math.max(open, high, low, close),
+      low: Math.min(open, high, low, close),
       close,
       volume: Number(c.volume || 0),
       label: c.label || "",
@@ -270,6 +270,7 @@ export const CandleChart = memo(function CandleChart({
   timeframe = "",
   quote = null,
   prevClose = null,
+  onRetry = null,
 }) {
   const { resolvedTheme } = useTheme();
   const isLight = resolvedTheme === "light";
@@ -709,10 +710,22 @@ export const CandleChart = memo(function CandleChart({
     }
 
     const pcVal = Number(prevClose);
-    const nextPrevCloseKey =
-      Number.isFinite(pcVal) && pcVal > 0
-        ? `${isArea ? "area" : "candle"}:${pcVal}`
-        : "";
+    const priceMin = bars.reduce(
+      (min, b) => (b.low < min ? b.low : min),
+      bars[0].low,
+    );
+    const priceMax = bars.reduce(
+      (max, b) => (b.high > max ? b.high : max),
+      bars[0].high,
+    );
+    const prevCloseInRange =
+      Number.isFinite(pcVal) &&
+      pcVal > 0 &&
+      pcVal >= priceMin * 0.35 &&
+      pcVal <= priceMax * 2.5;
+    const nextPrevCloseKey = prevCloseInRange
+      ? `${isArea ? "area" : "candle"}:${pcVal}`
+      : "";
     if (prev.prevCloseKey !== nextPrevCloseKey) {
       if (prevCloseLineRef.current && prevCloseSeriesRef.current) {
         try {
@@ -911,12 +924,21 @@ export const CandleChart = memo(function CandleChart({
         )}
 
         {!bars.length && (
-          <div className="candle-skeleton absolute inset-0 z-20">
+          <div className="candle-skeleton absolute inset-0 z-20 flex flex-col items-center justify-center gap-2">
             <div className="text-xs font-mono text-[var(--muted-2)]">
               {loading
                 ? "Loading TradingView NSE/BSE feed…"
                 : "No candle bars available."}
             </div>
+            {!loading && typeof onRetry === "function" && (
+              <button
+                type="button"
+                onClick={onRetry}
+                className="btn-ghost rounded-lg px-3 py-1 text-[11px] font-mono"
+              >
+                Retry chart
+              </button>
+            )}
           </div>
         )}
       </div>

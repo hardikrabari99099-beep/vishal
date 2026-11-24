@@ -207,6 +207,7 @@ export function PlatformPreview() {
     marketStatus,
     loading,
     refreshing,
+    refresh: refreshPreviewCandles,
   } = useLiveCandles(sym, "5m", {
     enabled: !paused,
     pollMs: 10000,
@@ -217,10 +218,11 @@ export function PlatformPreview() {
     pollMs: 5000,
     microTick,
   });
-  const previewQuote =
+  const rawPreviewQuote =
     quoteMap[sym]?.source === "Cache"
       ? quote || quoteMap[sym]
       : quoteMap[sym] || quote;
+  const previewQuote = rawPreviewQuote?.symbol === sym ? rawPreviewQuote : null;
   const chartPlaceholder = (
     <div className="grid h-[270px] place-items-center rounded-xl border border-[var(--border)] text-xs text-[var(--muted)]">
       Loading chart preview…
@@ -319,6 +321,7 @@ export function PlatformPreview() {
                   refreshing={refreshing}
                   showEma
                   symbol={sym}
+                  onRetry={refreshPreviewCandles}
                 />
               </Suspense>
             )}

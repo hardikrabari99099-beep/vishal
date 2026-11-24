@@ -11,6 +11,7 @@ import { useAuth } from "../../context/AuthContext";
 import { toast } from "sonner";
 import { Button } from "../../components/ui/button";
 import { getReviewMedia } from "../../lib/review-media";
+import { uploadAdminMedia } from "../../lib/media-upload";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Textarea } from "../../components/ui/textarea";
@@ -1504,7 +1505,7 @@ export default function AdminSettings() {
                   <VideoMediaUploader
                     label="Video file or URL"
                     value={item.url || ""}
-                    accept="video/mp4,video/webm,video/quicktime"
+                    accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v"
                     buttonLabel="Upload Video"
                     placeholder="https://... or upload MP4/WebM/MOV (max 18MB)"
                     onChange={(url) => update({ ...item, url })}
@@ -2302,52 +2303,33 @@ function VideoMediaUploader({
   previewKind,
 }) {
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    const maxBytes = previewKind === "video" ? 18 * 1024 * 1024 : 6 * 1024 * 1024;
-    if (file.size > maxBytes) {
-      toast.error(
-        previewKind === "video" ? "Video must be under 18 MB." : "Poster image must be under 6 MB.",
-      );
-      return;
-    }
     setUploading(true);
+    setProgress(0);
     try {
-      const dataUrl = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result || ""));
-        reader.onerror = () => reject(new Error("Could not read file"));
-        reader.readAsDataURL(file);
+      const data = await uploadAdminMedia(file, {
+        kind: previewKind === "video" ? "video" : "image",
+        onProgress: setProgress,
       });
-      const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
-      if (!match) throw new Error("Could not read file");
-      const uploadId = crypto.randomUUID();
-      const parts = match[2].match(/.{1,2097152}/g) || [];
-      let data;
-      for (let index = 0; index < parts.length; index++) {
-        try {
-          const response = await api.post("/admin/media", {
-            upload_id: uploadId, index, total: parts.length, content_type: match[1], chunk: parts[index],
-            filename: file.name,
-          });
-          data = response.data;
-        } catch (error) {
-          if (index !== 0 || error?.response?.status !== 400) throw error;
-          data = (await api.post("/admin/media", { data_url: dataUrl, filename: file.name })).data;
-          break;
-        }
-      }
       if (data?.url) {
         onChange(data.url);
         toast.success("Uploaded — click Save changes to publish");
       }
     } catch (err) {
-      toast.error(formatApiError(err?.response?.data?.detail, "Upload failed"));
+      toast.error(
+        formatApiError(
+          err?.response?.data?.detail,
+          err?.message || "Upload failed",
+        ),
+      );
     } finally {
       setUploading(false);
+      setProgress(0);
     }
   };
 
@@ -2365,8 +2347,18 @@ function VideoMediaUploader({
         />
         <label className="btn-ghost rounded-lg px-3.5 py-2 text-xs inline-flex items-center gap-1.5 cursor-pointer shrink-0">
           <Upload size={13} />
-          {uploading ? "Uploading…" : buttonLabel}
-          <input type="file" accept={accept} className="sr-only" onChange={handleFile} />
+          {uploading
+            ? progress > 0
+              ? `Uploading ${progress}%…`
+              : "Uploading…"
+            : buttonLabel}
+          <input
+            type="file"
+            accept={accept}
+            disabled={uploading}
+            className="sr-only"
+            onChange={handleFile}
+          />
         </label>
       </div>
       {media?.kind === "video" && (

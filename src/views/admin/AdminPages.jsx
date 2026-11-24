@@ -19,6 +19,8 @@ import {
   generateCertificateImage,
   generateQrDataUrl,
 } from "../../lib/payout-cert-qr";
+import { uploadAdminMedia } from "../../lib/media-upload";
+import { getReviewMedia } from "../../lib/review-media";
 import {
   Table,
   TableBody,
@@ -5516,6 +5518,8 @@ export function AdminStories() {
   const [rows, setRows] = useState([]);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [videoProgress, setVideoProgress] = useState(0);
   const [form, setForm] = useState({
     name: "",
     city: "",
@@ -5526,6 +5530,36 @@ export function AdminStories() {
     story: "",
     status: "approved",
   });
+
+  const onStoryVideoFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setVideoUploading(true);
+    setVideoProgress(0);
+    try {
+      const data = await uploadAdminMedia(file, {
+        kind: "video",
+        onProgress: setVideoProgress,
+      });
+      if (data?.url) {
+        setForm((cur) => ({ ...cur, video_url: data.url }));
+        toast.success("Video uploaded — click Publish Story to save");
+      }
+    } catch (err) {
+      toast.error(
+        formatApiError(
+          err?.response?.data?.detail,
+          err?.message || "Video upload failed",
+        ),
+      );
+    } finally {
+      setVideoUploading(false);
+      setVideoProgress(0);
+    }
+  };
+
+  const storyVideoMedia = getReviewMedia(form.video_url || "");
 
   const load = () => api.get("/admin/stories").then((r) => setRows(r.data || []));
   useEffect(() => {
@@ -5725,13 +5759,42 @@ export function AdminStories() {
               </div>
             </div>
             <div>
-              <Label>Video Link (optional)</Label>
-              <Input
-                value={form.video_url}
-                onChange={(e) => setForm({ ...form, video_url: e.target.value })}
-                className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-1.5"
-                placeholder="https://youtube.com/..."
-              />
+              <Label>Video File or Link (optional)</Label>
+              <div className="flex flex-wrap gap-2 items-center mt-1.5">
+                <Input
+                  value={form.video_url}
+                  onChange={(e) => setForm({ ...form, video_url: e.target.value })}
+                  className="bg-[var(--bg-1)] border-[var(--border-hi)] flex-1 min-w-[200px]"
+                  placeholder="https://youtube.com/... or upload MP4/WebM/MOV"
+                />
+                <label
+                  className="btn-ghost rounded-lg px-3.5 py-2 text-xs inline-flex items-center gap-1.5 cursor-pointer shrink-0"
+                  data-testid="story-video-upload-btn"
+                >
+                  <Upload size={13} />
+                  {videoUploading
+                    ? videoProgress > 0
+                      ? `Uploading ${videoProgress}%…`
+                      : "Uploading…"
+                    : "Upload Video"}
+                  <input
+                    type="file"
+                    accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v"
+                    disabled={videoUploading}
+                    className="sr-only"
+                    onChange={onStoryVideoFile}
+                  />
+                </label>
+              </div>
+              {storyVideoMedia?.kind === "video" && (
+                <video
+                  src={storyVideoMedia.url}
+                  controls
+                  muted
+                  playsInline
+                  className="h-28 rounded-lg border border-[var(--border)] bg-black/40 mt-2"
+                />
+              )}
             </div>
             <div>
               <Label>Trader Story *</Label>

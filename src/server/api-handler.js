@@ -87,6 +87,7 @@ const runtimeState =
     syncUpdatedAt: new Date().toISOString(),
     syncSubscribers: new Set(),
     memoryCollections: new Map(),
+    pendingMediaUploads: new Map(),
     memorySeeded: false,
     localHydrated: false,
     lastHydratedMtimeMs: 0,
@@ -433,6 +434,40 @@ function localPersistenceDisabled() {
 function sanitizeMediaKey(id) {
   return String(id || "").replace(/[^a-zA-Z0-9_-]/g, "");
 }
+const MEDIA_EXT_TO_MIME = {
+  mp4: "video/mp4",
+  m4v: "video/mp4",
+  webm: "video/webm",
+  mov: "video/quicktime",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+};
+const MEDIA_MIME_TO_EXT = {
+  "video/mp4": "mp4",
+  "video/x-m4v": "mp4",
+  "video/webm": "webm",
+  "video/quicktime": "mov",
+  "image/jpeg": "jpg",
+  "image/jpg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+function normalizeMediaMime(rawType, filename = "") {
+  const base = String(rawType || "")
+    .split(";")[0]
+    .trim()
+    .toLowerCase();
+  if (base === "video/x-m4v") return "video/mp4";
+  if (base === "image/jpg") return "image/jpeg";
+  if (MEDIA_MIME_TO_EXT[base]) return base;
+  const ext = String(filename || "")
+    .split(".")
+    .pop()
+    ?.toLowerCase();
+  return (ext && MEDIA_EXT_TO_MIME[ext]) || "";
+}
 function readLocalMediaAsset(id) {
   if (localPersistenceDisabled()) return null;
   const safe = sanitizeMediaKey(id);
@@ -448,9 +483,9 @@ function readLocalMediaAsset(id) {
   }
 }
 function writeLocalMediaAsset(doc) {
-  if (localPersistenceDisabled() || !doc || !doc.id) return;
+  if (localPersistenceDisabled() || !doc || !doc.id) return false;
   const safe = sanitizeMediaKey(doc.id);
-  if (!safe) return;
+  if (!safe) return false;
   try {
     const { mediaDir } = getLocalStorePaths();
     fs.mkdirSync(mediaDir, { recursive: true });
@@ -458,8 +493,9 @@ function writeLocalMediaAsset(doc) {
     const tmpPath = `${filePath}.tmp.${process.pid}`;
     fs.writeFileSync(tmpPath, JSON.stringify(doc), "utf8");
     fs.renameSync(tmpPath, filePath);
+    return true;
   } catch {
-    // ignore read-only disk environments
+    return false;
   }
 }
 function deleteLocalMediaAsset(id) {
@@ -473,6 +509,56 @@ function deleteLocalMediaAsset(id) {
   } catch {
     // ignore
   }
+}
+function storeMediaChunkLocal(uploadId, index, chunkStr) {
+  if (!runtimeState.pendingMediaUploads) {
+    runtimeState.pendingMediaUploads = new Map();
+  }
+  let entry = runtimeState.pendingMediaUploads.get(uploadId);
+  if (!entry) {
+    entry = { parts: new Map(), updatedAt: Date.now() };
+    runtimeState.pendingMediaUploads.set(uploadId, entry);
+  }
+  entry.parts.set(index, chunkStr);
+  entry.updatedAt = Date.now();
+  if (!localPersistenceDisabled()) {
+    try {
+      const { mediaDir } = getLocalStorePaths();
+      const chunkDir = path.join(mediaDir, "chunks", sanitizeMediaKey(uploadId));
+      fs.mkdirSync(chunkDir, { recursive: true });
+      fs.writeFileSync(path.join(chunkDir, `${index}.part`), chunkStr, "utf8");
+    } catch {
+      // ignore disk chunk cache failure when in-memory store holds it
+    }
+  }
+}
+function assembleMediaChunksLocal(uploadId, total) {
+  const parts = [];
+  const memEntry = runtimeState.pendingMediaUploads?.get(uploadId);
+  const { mediaDir } = getLocalStorePaths();
+  const chunkDir = path.join(mediaDir, "chunks", sanitizeMediaKey(uploadId));
+  for (let i = 0; i < total; i++) {
+    let part = memEntry?.parts?.get(i);
+    if (!part && !localPersistenceDisabled()) {
+      try {
+        const partPath = path.join(chunkDir, `${i}.part`);
+        if (fs.existsSync(partPath)) part = fs.readFileSync(partPath, "utf8");
+      } catch {
+        // ignore read error
+      }
+    }
+    if (!part) return null;
+    parts.push(part);
+  }
+  runtimeState.pendingMediaUploads?.delete(uploadId);
+  if (!localPersistenceDisabled()) {
+    try {
+      fs.rmSync(chunkDir, { recursive: true, force: true });
+    } catch {
+      // ignore cleanup error
+    }
+  }
+  return parts.join("");
 }
 function readJsonLocal(filePath, backupPath = "") {
   if (localPersistenceDisabled()) return {};
@@ -5141,7 +5227,7 @@ async function route(request, path) {
       title: str(b.title).trim().slice(0, 120),
       story,
       rating,
-      video_url: str(b.video_url).trim().slice(0, 300),
+      video_url: str(b.video_url).trim().slice(0, 500),
       payout_amount: num(b.payout_amount),
       email: str(b.email || admin.email).slice(0, 120),
       status: st,
@@ -5170,7 +5256,7 @@ async function route(request, path) {
     if (b.rating != null)
       next.rating = Math.min(5, Math.max(1, int(b.rating) || 5));
     if (b.video_url != null)
-      next.video_url = str(b.video_url).trim().slice(0, 300);
+      next.video_url = str(b.video_url).trim().slice(0, 500);
     if (b.payout_amount != null) next.payout_amount = num(b.payout_amount);
     const doc = await db.put("stories", next);
     bumpSync("stories");
@@ -5360,143 +5446,234 @@ async function route(request, path) {
   }
   if (is("POST", "/admin/media")) {
     await currentAdmin();
+    const saveUploadedAsset = async ({
+      id,
+      contentType,
+      filename,
+      base64Data,
+      byteLength,
+    }) => {
+      const isVideo = contentType.startsWith("video/");
+      const maxBytes = isVideo ? 18 * 1024 * 1024 : 6 * 1024 * 1024;
+      if (byteLength > maxBytes) {
+        fail(
+          413,
+          isVideo
+            ? "Video file is too large. Keep short videos under 18 MB."
+            : "Image file is too large. Keep images under 6 MB.",
+        );
+      }
+      const ext = MEDIA_MIME_TO_EXT[contentType] || "mp4";
+      const cleanId = id || `vid_${uuid().replace(/-/g, "").slice(0, 14)}`;
+      if (isNetlifyRuntime()) {
+        const { getStore } = await import("@netlify/blobs");
+        await getStore({ name: "review-media", consistency: "strong" }).set(
+          cleanId,
+          Buffer.from(base64Data, "base64"),
+        );
+      } else {
+        const asset = {
+          id: cleanId,
+          ext,
+          filename: str(filename).slice(0, 120) || `${cleanId}.${ext}`,
+          content_type: contentType,
+          data_base64: base64Data,
+          size: byteLength,
+          created_at: now(),
+        };
+        const savedLocal = writeLocalMediaAsset(asset);
+        try {
+          await db.put("media_assets", asset);
+        } catch (dbErr) {
+          if (!savedLocal) throw dbErr;
+        }
+      }
+      return {
+        id: cleanId,
+        url: `/api/media/${cleanId}.${ext}`,
+        content_type: contentType,
+        size: byteLength,
+      };
+    };
+
+    const reqContentType = str(
+      request.headers.get("content-type"),
+    ).toLowerCase();
+    if (reqContentType.includes("multipart/form-data")) {
+      let form;
+      try {
+        form = await request.formData();
+      } catch {
+        fail(400, "Invalid multipart upload");
+      }
+      const file = form.get("file");
+      if (!file || typeof file.arrayBuffer !== "function") {
+        fail(400, "No media file included in upload");
+      }
+      const normalizedType = normalizeMediaMime(file.type, file.name);
+      if (!normalizedType) {
+        fail(
+          400,
+          "Unsupported media format. Upload MP4, WebM, MOV, JPG, PNG, or WebP.",
+        );
+      }
+      const buf = Buffer.from(await file.arrayBuffer());
+      if (!buf.length) fail(400, "Uploaded file is empty");
+      return json(
+        await saveUploadedAsset({
+          contentType: normalizedType,
+          filename: file.name,
+          base64Data: buf.toString("base64"),
+          byteLength: buf.length,
+        }),
+      );
+    }
+
     const b = await body();
-    if (isNetlifyRuntime() && b.upload_id) {
+    if (b.upload_id) {
       const uploadId = str(b.upload_id);
       const index = Number(b.index);
       const total = Number(b.total);
-      const contentType = str(b.content_type).toLowerCase();
-      const extensions = {
-        "video/mp4": "mp4",
-        "video/webm": "webm",
-        "video/quicktime": "mov",
-        "image/jpeg": "jpg",
-        "image/png": "png",
-        "image/webp": "webp",
-      };
+      const contentType = normalizeMediaMime(b.content_type, b.filename);
+      const chunkStr = str(b.chunk);
       if (
-        !/^[\w-]{36}$/.test(uploadId) ||
+        !/^[a-zA-Z0-9_-]{8,64}$/.test(uploadId) ||
         !Number.isInteger(index) ||
         !Number.isInteger(total) ||
         total < 1 ||
-        total > 12 ||
+        total > 64 ||
         index < 0 ||
         index >= total ||
-        !extensions[contentType] ||
-        !/^[A-Za-z0-9+/=]+$/.test(str(b.chunk)) ||
-        str(b.chunk).length > 2097152
-      )
+        !contentType ||
+        !chunkStr ||
+        !/^[A-Za-z0-9+/=]+$/.test(chunkStr) ||
+        chunkStr.length > 2097152
+      ) {
         fail(400, "Invalid media upload");
-      const { getStore } = await import("@netlify/blobs");
-      const mediaStore = getStore({
-        name: "review-media",
-        consistency: "strong",
-      });
-      await mediaStore.set(`parts/${uploadId}/${index}`, str(b.chunk));
-      if (index < total - 1) return json({ ok: true });
-      const parts = await Promise.all(
-        Array.from({ length: total }, (_, part) =>
-          mediaStore.get(`parts/${uploadId}/${part}`, { type: "text" }),
-        ),
+      }
+      if (isNetlifyRuntime()) {
+        const { getStore } = await import("@netlify/blobs");
+        const mediaStore = getStore({
+          name: "review-media",
+          consistency: "strong",
+        });
+        await mediaStore.set(`parts/${uploadId}/${index}`, chunkStr);
+        if (index < total - 1) return json({ ok: true, index, total });
+        const parts = await Promise.all(
+          Array.from({ length: total }, (_, part) =>
+            mediaStore.get(`parts/${uploadId}/${part}`, { type: "text" }),
+          ),
+        );
+        if (parts.some((part) => !part)) fail(400, "Upload is incomplete");
+        const fullBase64 = parts.join("");
+        const buffer = Buffer.from(fullBase64, "base64");
+        if (buffer.length > 18 * 1024 * 1024) {
+          fail(413, "Video file is too large");
+        }
+        const id = `vid_${uploadId.replace(/-/g, "")}`;
+        await mediaStore.set(id, buffer);
+        await Promise.all(
+          parts.map((_, part) =>
+            mediaStore.delete(`parts/${uploadId}/${part}`),
+          ),
+        );
+        const ext = MEDIA_MIME_TO_EXT[contentType] || "mp4";
+        return json({
+          id,
+          url: `/api/media/${id}.${ext}`,
+          content_type: contentType,
+          size: buffer.length,
+        });
+      }
+
+      storeMediaChunkLocal(uploadId, index, chunkStr);
+      if (index < total - 1) return json({ ok: true, index, total });
+      const joinedBase64 = assembleMediaChunksLocal(uploadId, total);
+      if (!joinedBase64) fail(400, "Upload is incomplete");
+      const buffer = Buffer.from(joinedBase64, "base64");
+      const id = `vid_${uploadId.replace(/[^a-zA-Z0-9]/g, "").slice(0, 20)}`;
+      return json(
+        await saveUploadedAsset({
+          id,
+          contentType,
+          filename: b.filename,
+          base64Data: joinedBase64,
+          byteLength: buffer.length,
+        }),
       );
-      if (parts.some((part) => !part)) fail(400, "Upload is incomplete");
-      const buffer = Buffer.from(parts.join(""), "base64");
-      if (buffer.length > 18 * 1024 * 1024)
-        fail(413, "Video file is too large");
-      const id = `vid_${uploadId.replace(/-/g, "")}`;
-      await mediaStore.set(id, buffer);
-      await Promise.all(
-        parts.map((_, part) => mediaStore.delete(`parts/${uploadId}/${part}`)),
-      );
-      return json({
-        id,
-        url: `/api/media/${id}.${extensions[contentType]}`,
-        content_type: contentType,
-        size: buffer.length,
-      });
     }
+
     const dataUrl = str(b.data_url);
-    const m = dataUrl.match(
-      /^data:(video\/(?:mp4|webm|quicktime)|image\/(?:jpeg|png|webp));base64,(.+)$/i,
-    );
-    if (!m)
+    const m = dataUrl.match(/^data:([^;,]+)(?:;[^,]*)?;base64,(.+)$/i);
+    if (!m) {
       fail(
         400,
         "Unsupported media format. Upload MP4, WebM, or MOV short videos.",
       );
-    const contentType = m[1].toLowerCase();
-    const base64Data = m[2];
-    if (base64Data.length > 26 * 1024 * 1024) {
-      fail(413, "Video file is too large. Keep short videos under 18 MB.");
     }
-    const extMap = {
-      "video/mp4": "mp4",
-      "video/webm": "webm",
-      "video/quicktime": "mov",
-      "image/jpeg": "jpg",
-      "image/png": "png",
-      "image/webp": "webp",
-    };
-    const ext = extMap[contentType] || "mp4";
-    const id = `vid_${uuid().replace(/-/g, "").slice(0, 14)}`;
-    const asset = {
-      id,
-      ext,
-      filename: str(b.filename).slice(0, 120) || `${id}.${ext}`,
-      content_type: contentType,
-      data_base64: base64Data,
-      size: Math.floor((base64Data.length * 3) / 4),
-      created_at: now(),
-    };
-    if (isNetlifyRuntime()) {
-      const { getStore } = await import("@netlify/blobs");
-      await getStore({ name: "review-media", consistency: "strong" }).set(
-        id,
-        Buffer.from(base64Data, "base64"),
+    const contentType = normalizeMediaMime(m[1], b.filename);
+    if (!contentType) {
+      fail(
+        400,
+        "Unsupported media format. Upload MP4, WebM, or MOV short videos.",
       );
-    } else {
-      await db.put("media_assets", asset);
     }
-    return json({
-      id,
-      url: `/api/media/${id}.${ext}`,
-      content_type: contentType,
-      size: asset.size,
-    });
+    const base64Data = m[2].replace(/\s+/g, "");
+    const byteLength = Buffer.from(base64Data, "base64").length;
+    return json(
+      await saveUploadedAsset({
+        contentType,
+        filename: b.filename,
+        base64Data,
+        byteLength,
+      }),
+    );
   }
-  if ((p = is("GET", "/media/:filename"))) {
+  if ((p = is("GET", "/media/:filename")) || (p = is("HEAD", "/media/:filename"))) {
     const assetId = str(p.filename).replace(
-      /\.(?:mp4|webm|mov|jpg|jpeg|png|webp)$/i,
+      /\.(?:mp4|m4v|webm|mov|jpg|jpeg|png|webp)$/i,
       "",
     );
-    let asset = await db.get("media_assets", assetId);
+    let asset = null;
+    try {
+      asset = await db.get("media_assets", assetId);
+    } catch {
+      asset = null;
+    }
+    if (!asset) {
+      asset = readLocalMediaAsset(assetId);
+    }
     if (!asset && isNetlifyRuntime()) {
       const { getStore } = await import("@netlify/blobs");
       const blob = await getStore({
         name: "review-media",
         consistency: "strong",
       }).get(assetId, { type: "arrayBuffer" });
-      const mimeTypes = {
-        mp4: "video/mp4",
-        webm: "video/webm",
-        mov: "video/quicktime",
-        jpg: "image/jpeg",
-        jpeg: "image/jpeg",
-        png: "image/png",
-        webp: "image/webp",
-      };
-      if (blob)
+      if (blob) {
+        const ext = str(p.filename).split(".").pop()?.toLowerCase() || "mp4";
         asset = {
           data_base64: Buffer.from(blob).toString("base64"),
-          content_type:
-            mimeTypes[str(p.filename).split(".").pop().toLowerCase()],
+          content_type: MEDIA_EXT_TO_MIME[ext] || "video/mp4",
         };
+      }
     }
     if (!asset || !asset.data_base64) fail(404, "Media not found");
     const buf = Buffer.from(asset.data_base64, "base64");
     const total = buf.length;
     const range = request.headers.get("range");
-    const mime = asset.content_type || "video/mp4";
+    const mime =
+      normalizeMediaMime(asset.content_type, p.filename) || "video/mp4";
+    if (method === "HEAD") {
+      return new Response(null, {
+        status: 200,
+        headers: {
+          "content-type": mime,
+          "accept-ranges": "bytes",
+          "content-length": String(total),
+          "cache-control": "public, max-age=31536000, immutable",
+        },
+      });
+    }
     if (range) {
       const m = range.match(/bytes=(\d+)-(\d*)/);
       if (m) {

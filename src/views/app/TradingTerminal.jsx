@@ -393,6 +393,7 @@ export function TradingTerminal({ embedded = false } = {}) {
     quote: candleQuote,
     loading: candlesLoading,
     refreshing: candlesRefreshing,
+    refresh: refreshCandles,
   } = useLiveCandles(sym, tf, { pollMs: 5000 });
 
   const {
@@ -400,6 +401,7 @@ export function TradingTerminal({ embedded = false } = {}) {
     quote: secQuote,
     loading: secLoading,
     refreshing: secRefreshing,
+    refresh: refreshSecCandles,
   } = useLiveCandles(secondarySym, secondaryTf, {
     pollMs: 5000,
     enabled:
@@ -461,15 +463,26 @@ export function TradingTerminal({ embedded = false } = {}) {
     ],
   );
 
-  const chartQuote =
+  const rawChartQuote =
     quoteMap[sym]?.source === "Cache"
       ? candleQuote || quoteMap[sym]
       : quoteMap[sym] || candleQuote;
-  const activeQuote = chartQuote || candleQuote;
-  const secondaryQuote =
+  const activeQuote =
+    rawChartQuote?.symbol === sym
+      ? rawChartQuote
+      : candleQuote?.symbol === sym
+        ? candleQuote
+        : null;
+  const rawSecondaryQuote =
     quoteMap[secondarySym]?.source === "Cache"
       ? secQuote || quoteMap[secondarySym]
       : quoteMap[secondarySym] || secQuote;
+  const secondaryQuote =
+    rawSecondaryQuote?.symbol === secondarySym
+      ? rawSecondaryQuote
+      : secQuote?.symbol === secondarySym
+        ? secQuote
+        : null;
   const syncedCandles = candles || [];
   const ticketQuote =
     quoteMap[ticketSym] || (ticketSym === sym ? activeQuote : null);
@@ -1514,6 +1527,7 @@ export function TradingTerminal({ embedded = false } = {}) {
             refreshing={candlesRefreshing}
             mode={chartMode}
             showEma={showEma}
+            onRetry={refreshCandles}
           />
         </div>
       </div>
@@ -2942,10 +2956,12 @@ export function TradingTerminal({ embedded = false } = {}) {
                         quote={secondaryQuote}
                         symbol={secondarySym}
                         height={185}
+                        prevClose={secondaryQuote?.prevClose ?? null}
                         loading={secLoading}
                         refreshing={secRefreshing}
                         mode={chartMode}
                         showEma={showEma}
+                        onRetry={refreshSecCandles}
                       />
                     </div>
                   )}
@@ -3173,10 +3189,12 @@ export function TradingTerminal({ embedded = false } = {}) {
                             quote={secondaryQuote}
                             symbol={secondarySym}
                             height={340}
+                            prevClose={secondaryQuote?.prevClose ?? null}
                             loading={secLoading}
                             refreshing={secRefreshing}
                             mode={chartMode}
                             showEma={showEma}
+                            onRetry={refreshSecCandles}
                           />
                         </div>
                         <div className="text-[10px] font-mono text-[var(--muted-2)] mt-2 pt-2 border-t border-[var(--border)] flex justify-between">
