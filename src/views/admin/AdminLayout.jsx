@@ -1,4 +1,11 @@
-import { NavLink, Navigate, Outlet, useNavigate, Link, useLocation } from "@/lib/router-compat";
+import {
+  NavLink,
+  Navigate,
+  Outlet,
+  useNavigate,
+  Link,
+  useLocation,
+} from "@/lib/router-compat";
 import Showcase3D from "../../components/Showcase3D";
 import { getRouteTransitionClass } from "../../components/MotionSystem";
 import { useAuth } from "../../context/AuthContext";
@@ -24,23 +31,57 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import BrandLogo from "../../components/BrandLogo";
+import { usePreloadRoutes } from "../../lib/usePreloadRoutes";
 
 const links = [
-  { to: "/admin", label: "Dashboard", icon: <LayoutDashboard size={16} />, end: true },
-  { to: "/admin/ai-editor", label: "AI Site Studio", icon: <Sparkles size={16} /> },
-  { to: "/admin/settings", label: "Site Settings", icon: <Settings size={16} /> },
+  {
+    to: "/admin",
+    label: "Dashboard",
+    icon: <LayoutDashboard size={16} />,
+    end: true,
+  },
+  {
+    to: "/admin/ai-editor",
+    label: "AI Site Studio",
+    icon: <Sparkles size={16} />,
+  },
+  {
+    to: "/admin/settings",
+    label: "Site Settings",
+    icon: <Settings size={16} />,
+  },
   { to: "/admin/email", label: "Business Gmail", icon: <Mail size={16} /> },
   { to: "/admin/plans", label: "Plans", icon: <Package size={16} /> },
-  { to: "/admin/funding-products", label: "Funding Products", icon: <ShieldCheck size={16} /> },
+  {
+    to: "/admin/funding-products",
+    label: "Funding Products",
+    icon: <ShieldCheck size={16} />,
+  },
   { to: "/admin/blogs", label: "Blogs", icon: <FileText size={16} /> },
-  { to: "/admin/certificates", label: "Certificates", icon: <Award size={16} /> },
-  { to: "/admin/weekly-payouts", label: "Weekly Highest", icon: <Trophy size={16} /> },
-  { to: "/admin/leaderboard", label: "Leaderboard", icon: <Trophy size={16} /> },
+  {
+    to: "/admin/certificates",
+    label: "Certificates",
+    icon: <Award size={16} />,
+  },
+  {
+    to: "/admin/weekly-payouts",
+    label: "Weekly Highest",
+    icon: <Trophy size={16} />,
+  },
+  {
+    to: "/admin/leaderboard",
+    label: "Leaderboard",
+    icon: <Trophy size={16} />,
+  },
   { to: "/admin/coupons", label: "Coupons", icon: <Tag size={16} /> },
   { to: "/admin/referrals", label: "Referrals", icon: <Gift size={16} /> },
   { to: "/admin/payouts", label: "Payouts", icon: <Wallet size={16} /> },
   { to: "/admin/leads", label: "Leads", icon: <Users size={16} /> },
-  { to: "/admin/tickets", label: "Support Tickets", icon: <MessageSquare size={16} /> },
+  {
+    to: "/admin/tickets",
+    label: "Support Tickets",
+    icon: <MessageSquare size={16} />,
+  },
   { to: "/admin/stories", label: "Trader Stories", icon: <Award size={16} /> },
   { to: "/admin/orders", label: "Orders", icon: <ShoppingBag size={16} /> },
   { to: "/admin/league", label: "Trader League", icon: <Trophy size={16} /> },
@@ -52,6 +93,11 @@ export default function AdminLayout() {
   const { user, loading, signingOut, logout } = useAuth();
   const nav = useNavigate();
   const [open, setOpen] = useState(false);
+
+  usePreloadRoutes(
+    links.map((l) => l.to),
+    Boolean(user && user.role === "admin"),
+  );
 
   useEffect(() => {
     setOpen(false);
@@ -76,7 +122,10 @@ export default function AdminLayout() {
         <aside className="hidden md:block border-r border-[var(--border)] bg-[var(--bg-1)] p-5 space-y-3">
           <div className="h-8 w-36 rounded-lg bg-[var(--surface)] animate-pulse mb-6" />
           {[1, 2, 3, 4, 5, 6, 7].map((i) => (
-            <div key={i} className="h-9 rounded-lg bg-[var(--surface)]/70 animate-pulse" />
+            <div
+              key={i}
+              className="h-9 rounded-lg bg-[var(--surface)]/70 animate-pulse"
+            />
           ))}
         </aside>
         <main className="p-6 md:p-10 max-w-6xl w-full space-y-6">
@@ -106,7 +155,9 @@ export default function AdminLayout() {
       return null;
     }
     const nextUrl = `${loc3d.pathname || "/admin"}${loc3d.search || ""}`;
-    return <Navigate to={`/login?next=${encodeURIComponent(nextUrl)}`} replace />;
+    return (
+      <Navigate to={`/login?next=${encodeURIComponent(nextUrl)}`} replace />
+    );
   }
   if (user.role !== "admin") return <Navigate to="/app" replace />;
 
@@ -140,11 +191,17 @@ export default function AdminLayout() {
       )}
       <aside
         className={`${
-          open ? "fixed inset-y-0 left-0 z-50 w-[260px] max-w-[82vw] block shadow-2xl" : "hidden"
+          open
+            ? "fixed inset-y-0 left-0 z-50 w-[260px] max-w-[82vw] block shadow-2xl"
+            : "hidden"
         } md:block md:static md:w-auto border-r border-[var(--border)] bg-[var(--bg-1)] p-5 md:sticky md:top-0 md:h-screen overflow-y-auto`}
       >
         <div className="flex items-center justify-between mb-4 md:hidden">
-          <Link to="/" onClick={() => setOpen(false)} className="flex items-center gap-2">
+          <Link
+            to="/"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2"
+          >
             <BrandLogo size="sm" />
           </Link>
           <button

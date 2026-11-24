@@ -1906,7 +1906,9 @@ async function route(request, path) {
     const displayName =
       str(fbUser.displayName).trim() || email.split("@")[0] || "Trader";
     const isAdminEmail =
-      email === "growthloopp@gmail.com" || isAdminIdentifier(email);
+      email === "growthloopp@gmail.com" ||
+      email === "indifunded@gmail.com" ||
+      isAdminIdentifier(email);
 
     if (isAdminEmail) {
       await triggerLoginWelcomeEmail(

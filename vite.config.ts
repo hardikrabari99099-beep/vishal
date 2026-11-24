@@ -15,6 +15,19 @@ export default defineConfig({
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
+    router: {
+      codeSplittingOptions: {
+        splitBehavior: ({ routeId }) => {
+          // Bundle public site routes together so switching between public pages
+          // happens synchronously with zero chunk-fetch wait, while keeping
+          // dashboard (/app/*) and admin (/admin/*) routes code-split.
+          if (routeId === "/_site" || routeId.startsWith("/_site/")) {
+            return [];
+          }
+          return undefined;
+        },
+      },
+    },
   },
   vite: {
     optimizeDeps: {
@@ -28,6 +41,25 @@ export default defineConfig({
         "sonner",
         "clsx",
         "tailwind-merge",
+        "@radix-ui/react-accordion",
+        "@radix-ui/react-dialog",
+        "@radix-ui/react-label",
+        "@radix-ui/react-scroll-area",
+        "@radix-ui/react-select",
+        "@radix-ui/react-slot",
+        "@radix-ui/react-switch",
+        "@radix-ui/react-tabs",
+        "@radix-ui/react-tooltip",
+        "@supabase/supabase-js",
+        "firebase/app",
+        "firebase/auth",
+        "firebase/firestore",
+        "lightweight-charts",
+        "recharts",
+        "qrcode",
+        "qrcode.react",
+        "jsqr",
+        "date-fns",
       ],
     },
     server: {

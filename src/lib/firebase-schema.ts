@@ -1,6 +1,18 @@
 import blueprint from "../../firebase-blueprint.json";
 
 export const BOOTSTRAPPED_ADMIN_EMAIL = "growthloopp@gmail.com";
+export const BOOTSTRAPPED_ADMIN_EMAILS = new Set([
+  BOOTSTRAPPED_ADMIN_EMAIL,
+  "indifunded@gmail.com",
+]);
+
+export function isBootstrappedAdminEmail(email?: string | null): boolean {
+  return BOOTSTRAPPED_ADMIN_EMAILS.has(
+    String(email || "")
+      .trim()
+      .toLowerCase(),
+  );
+}
 
 export const ID_PATTERN = /^[a-zA-Z0-9_-]+$/;
 export const SLUG_PATTERN = /^[a-z0-9_-]+$/;

@@ -25,6 +25,7 @@ import {
 import firebaseConfig from "../../firebase-applet-config.json";
 import {
   BOOTSTRAPPED_ADMIN_EMAIL,
+  isBootstrappedAdminEmail,
   sanitizeAdminRecordPayload,
   sanitizeBlogPayload,
   sanitizeCertificatePayload,
@@ -145,10 +146,7 @@ export async function testConnection(): Promise<boolean> {
 export function isFirebaseAdminUser(
   user: FirebaseUser | null | undefined = auth.currentUser,
 ) {
-  return Boolean(
-    user?.emailVerified &&
-    user.email?.trim().toLowerCase() === BOOTSTRAPPED_ADMIN_EMAIL,
-  );
+  return Boolean(user?.emailVerified && isBootstrappedAdminEmail(user.email));
 }
 
 export async function signInWithGooglePopup() {
@@ -171,7 +169,7 @@ export async function upsertUserProfileInFirestore(firebaseUser: FirebaseUser) {
   const privatePath = `users/${uid}/private/info`;
   const isAdminEmail =
     Boolean(firebaseUser.emailVerified) &&
-    firebaseUser.email?.trim().toLowerCase() === BOOTSTRAPPED_ADMIN_EMAIL;
+    isBootstrappedAdminEmail(firebaseUser.email);
 
   let existingPublic = null;
   try {

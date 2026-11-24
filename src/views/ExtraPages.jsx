@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "@/lib/router-compat";
 import { api } from "../lib/api";
 import { useSettings } from "../context/SettingsContext";
@@ -22,7 +22,6 @@ import {
   VideoOff,
   Loader2,
 } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
 import {
   TrustStats,
   CompanyDetails,
@@ -31,12 +30,11 @@ import {
 } from "../components/TrustSection";
 import { findPayoutProof, findCredential, formatAmount } from "../lib/trust";
 import { getReviewMedia } from "../lib/review-media";
-import {
-  buildVerificationUrl,
-  decodeQrFromFile,
-  decodeQrFromVideoFrame,
-  parseQrVerificationInput,
-} from "../lib/payout-cert-qr";
+import { buildVerificationUrl, parseQrVerificationInput } from "../lib/qr-url";
+
+const LazyQRCodeSVG = lazy(() =>
+  import("qrcode.react").then((m) => ({ default: m.QRCodeSVG })),
+);
 
 const Shell = ({ chip, title, sub, compact = false, children }) => (
   <div
@@ -45,7 +43,9 @@ const Shell = ({ chip, title, sub, compact = false, children }) => (
     }`}
   >
     <div className="chip mb-4">{chip}</div>
-    <h1 className="font-display text-3xl sm:text-4xl md:text-6xl max-w-3xl">{title}</h1>
+    <h1 className="font-display text-3xl sm:text-4xl md:text-6xl max-w-3xl">
+      {title}
+    </h1>
     {sub && (
       <p
         className={`text-[var(--muted)] ${
@@ -80,7 +80,10 @@ export function HowItWorksPage() {
         >
           {hiw.cta_primary || "See challenges"} <ArrowRight size={16} />
         </Link>
-        <Link to="/rules" className="rounded-full px-6 py-3 border border-[var(--border-hi)]">
+        <Link
+          to="/rules"
+          className="rounded-full px-6 py-3 border border-[var(--border-hi)]"
+        >
           {hiw.cta_secondary || "Trading rules"}
         </Link>
       </div>
@@ -100,7 +103,11 @@ export function TrustCenter() {
     >
       <TrustStats stats={t.stats} />
       <div className="mt-8">
-        <CompanyDetails company={t.company} team={t.support_team} labels={labels} />
+        <CompanyDetails
+          company={t.company}
+          team={t.support_team}
+          labels={labels}
+        />
       </div>
       <div className="flex flex-wrap gap-3 mt-8 text-sm">
         <Link
@@ -109,7 +116,10 @@ export function TrustCenter() {
         >
           <ShieldCheck size={16} /> {labels.verify_cta || "Verify a payout"}
         </Link>
-        <Link to="/payouts" className="rounded-full px-5 py-2.5 border border-[var(--border-hi)]">
+        <Link
+          to="/payouts"
+          className="rounded-full px-5 py-2.5 border border-[var(--border-hi)]"
+        >
           {labels.payout_records_cta || "Payout records"}
         </Link>
       </div>
@@ -138,7 +148,11 @@ export function TrustCenter() {
 export function VerifyPayout() {
   const { settings } = useSettings();
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialCode = (searchParams.get("code") || searchParams.get("q") || "").trim();
+  const initialCode = (
+    searchParams.get("code") ||
+    searchParams.get("q") ||
+    ""
+  ).trim();
 
   const [mode, setMode] = useState("manual"); // "manual" | "upload" | "camera"
   const [q, setQ] = useState(initialCode);
@@ -170,7 +184,9 @@ export function VerifyPayout() {
     const hit = findPayoutProof(settings.trust?.payout_proofs, lookup);
     setProof(hit);
     try {
-      const r = await api.get("/public/verify-payout", { params: { q: lookup } });
+      const r = await api.get("/public/verify-payout", {
+        params: { q: lookup },
+      });
       setRes(r.data);
     } catch {
       setRes([]);
@@ -210,23 +226,31 @@ export function VerifyPayout() {
         return;
       }
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
-        });
+        const [{ decodeQrFromVideoFrame }, stream] = await Promise.all([
+          import("../lib/payout-cert-qr"),
+          navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment" },
+          }),
+        ]);
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
           return;
         }
         streamRef.current = stream;
         setCameraActive(true);
-        setQrStatus("Point your camera at the QR code on the payout certificate…");
+        setQrStatus(
+          "Point your camera at the QR code on the payout certificate…",
+        );
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           await videoRef.current.play().catch(() => {});
         }
         timer = setInterval(() => {
           if (cancelled || !videoRef.current || !canvasRef.current) return;
-          const decoded = decodeQrFromVideoFrame(videoRef.current, canvasRef.current);
+          const decoded = decodeQrFromVideoFrame(
+            videoRef.current,
+            canvasRef.current,
+          );
           if (decoded) {
             stopCamera();
             setQrStatus(`QR detected — verifying…`);
@@ -270,6 +294,7 @@ export function VerifyPayout() {
     setBusy(true);
     setQrStatus("Scanning image for QR code…");
     try {
+      const { decodeQrFromFile } = await import("../lib/payout-cert-qr");
       const decoded = await decodeQrFromFile(file);
       if (!decoded) {
         setQrStatus(
@@ -362,7 +387,12 @@ export function VerifyPayout() {
             className="btn-amber rounded-full px-6 py-3 inline-flex items-center gap-2"
             data-testid="verify-payout-submit"
           >
-            {busy ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />} Check
+            {busy ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Search size={16} />
+            )}{" "}
+            Check
           </button>
         </form>
       )}
@@ -374,16 +404,23 @@ export function VerifyPayout() {
               <QrCode size={22} />
             </div>
             <div className="flex-1">
-              <div className="font-display text-lg">Upload Payout Certificate or QR Screenshot</div>
+              <div className="font-display text-lg">
+                Upload Payout Certificate or QR Screenshot
+              </div>
               <p className="text-xs text-[var(--muted)] mt-1">
-                Upload the full payout certificate image or cropped QR code — our scanner reads the
-                embedded QR automatically and verifies the payout record.
+                Upload the full payout certificate image or cropped QR code —
+                our scanner reads the embedded QR automatically and verifies the
+                payout record.
               </p>
               <label
                 className="btn-amber rounded-full px-5 py-2.5 text-sm inline-flex items-center gap-2 cursor-pointer mt-4"
                 data-testid="verify-qr-upload-input-label"
               >
-                {busy ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
+                {busy ? (
+                  <Loader2 size={15} className="animate-spin" />
+                ) : (
+                  <Upload size={15} />
+                )}
                 {busy ? "Scanning QR…" : "Choose Certificate / QR Image"}
                 <input
                   type="file"
@@ -394,7 +431,9 @@ export function VerifyPayout() {
                 />
               </label>
               {qrStatus && (
-                <div className="text-xs text-[var(--muted)] mt-3 font-mono">{qrStatus}</div>
+                <div className="text-xs text-[var(--muted)] mt-3 font-mono">
+                  {qrStatus}
+                </div>
               )}
             </div>
           </div>
@@ -405,10 +444,15 @@ export function VerifyPayout() {
         <div className="glass-card p-6 max-w-xl">
           {cameraError ? (
             <div className="flex items-start gap-3 text-sm">
-              <VideoOff className="text-[var(--rose)] shrink-0 mt-0.5" size={20} />
+              <VideoOff
+                className="text-[var(--rose)] shrink-0 mt-0.5"
+                size={20}
+              />
               <div>
                 <div className="text-white font-medium">Camera unavailable</div>
-                <p className="text-xs text-[var(--muted)] mt-1">{cameraError}</p>
+                <p className="text-xs text-[var(--muted)] mt-1">
+                  {cameraError}
+                </p>
                 <button
                   type="button"
                   onClick={() => setMode("upload")}
@@ -421,7 +465,12 @@ export function VerifyPayout() {
           ) : (
             <div className="space-y-3">
               <div className="relative rounded-xl overflow-hidden border border-[var(--border-hi)] bg-black aspect-video max-h-72">
-                <video ref={videoRef} playsInline muted className="w-full h-full object-cover" />
+                <video
+                  ref={videoRef}
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover"
+                />
                 {cameraActive && (
                   <div className="pointer-events-none absolute inset-0 grid place-items-center">
                     <div className="w-40 h-40 rounded-xl border-2 border-[var(--accent)] shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]" />
@@ -452,8 +501,8 @@ export function VerifyPayout() {
           className="glass-card p-5 mt-6 flex gap-2 items-center max-w-xl"
           data-testid="verify-not-found"
         >
-          <XCircle className="text-[var(--rose)] shrink-0" /> No verified payout found for{" "}
-          <span className="font-mono text-white">{q}</span>.
+          <XCircle className="text-[var(--rose)] shrink-0" /> No verified payout
+          found for <span className="font-mono text-white">{q}</span>.
         </div>
       )}
       {proof && (
@@ -486,7 +535,9 @@ export function VerifyPayout() {
                     <div className="flex items-center gap-2 text-[var(--emerald)] text-sm font-medium">
                       <CheckCircle2 size={16} /> Verified IndiFunded Payout
                     </div>
-                    <div className="font-display text-2xl text-white">{c.trader_name}</div>
+                    <div className="font-display text-2xl text-white">
+                      {c.trader_name}
+                    </div>
                     <div className="text-xl font-mono text-[var(--accent)]">
                       {c.amount ? formatAmount(c.amount) : ""}
                     </div>
@@ -495,11 +546,17 @@ export function VerifyPayout() {
                         <div>
                           {c.plan ? `${c.plan} Plan` : ""}
                           {c.plan && c.account_size > 0 ? " · " : ""}
-                          {c.account_size > 0 ? `Account ${formatAmount(c.account_size)}` : ""}
+                          {c.account_size > 0
+                            ? `Account ${formatAmount(c.account_size)}`
+                            : ""}
                         </div>
                       )}
                       {c.date && <div>Payout Date: {c.date}</div>}
-                      {c.payout_id && <div className="font-mono">Payout ID: {c.payout_id}</div>}
+                      {c.payout_id && (
+                        <div className="font-mono">
+                          Payout ID: {c.payout_id}
+                        </div>
+                      )}
                       {c.certificate_code && (
                         <div className="font-mono text-[var(--muted-2)]">
                           Cert ID: {c.certificate_code}
@@ -513,7 +570,13 @@ export function VerifyPayout() {
                     </div>
                   </div>
                   <div className="bg-white p-2 rounded-lg shrink-0">
-                    <QRCodeSVG value={qrUrl} size={84} />
+                    <Suspense
+                      fallback={
+                        <div className="w-[84px] h-[84px] bg-slate-200 rounded animate-pulse" />
+                      }
+                    >
+                      <LazyQRCodeSVG value={qrUrl} size={84} />
+                    </Suspense>
                   </div>
                 </div>
               </div>
@@ -538,7 +601,13 @@ export function CredentialVerify({ code }) {
   return (
     <Shell
       chip="Certificate verification"
-      title={c ? "This credential is genuine" : loading ? "Checking…" : "Credential not found"}
+      title={
+        c
+          ? "This credential is genuine"
+          : loading
+            ? "Checking…"
+            : "Credential not found"
+      }
       sub={
         c
           ? "Issued and verified by IndiFunded."
@@ -557,19 +626,29 @@ export function CredentialVerify({ code }) {
             <div className="text-[var(--muted)]">{c.title}</div>
             {c.amount && (
               <div>
-                <span className="text-[var(--muted)]">Amount:</span> {formatAmount(c.amount)}
+                <span className="text-[var(--muted)]">Amount:</span>{" "}
+                {formatAmount(c.amount)}
               </div>
             )}
             {c.issued_date && (
               <div>
-                <span className="text-[var(--muted)]">Issued:</span> {c.issued_date}
+                <span className="text-[var(--muted)]">Issued:</span>{" "}
+                {c.issued_date}
               </div>
             )}
-            <div className="font-mono text-xs text-[var(--muted-2)]">Code: {c.code}</div>
+            <div className="font-mono text-xs text-[var(--muted-2)]">
+              Code: {c.code}
+            </div>
           </div>
           {url && (
             <div className="trust-qr">
-              <QRCodeSVG value={url} size={132} />
+              <Suspense
+                fallback={
+                  <div className="w-[132px] h-[132px] bg-slate-200 rounded animate-pulse" />
+                }
+              >
+                <LazyQRCodeSVG value={url} size={132} />
+              </Suspense>
             </div>
           )}
         </div>
@@ -609,7 +688,10 @@ const POLICIES = {
   terms: {
     title: "Terms and Conditions",
     body: [
-      ["Eligibility", "You must be 18 or older and give accurate details to buy a challenge."],
+      [
+        "Eligibility",
+        "You must be 18 or older and give accurate details to buy a challenge.",
+      ],
       [
         "Simulated evaluation",
         "Challenges are evaluations. Passing them qualifies you for a funded account under a profit-share agreement.",
@@ -627,7 +709,10 @@ const POLICIES = {
   refund: {
     title: "Refund Policy",
     body: [
-      ["Challenge fees", "Fees are non-refundable once the trading account has been issued."],
+      [
+        "Challenge fees",
+        "Fees are non-refundable once the trading account has been issued.",
+      ],
       [
         "Before activation",
         "If your account has not been issued yet, contact support within 24 hours of payment for a refund review.",
@@ -705,7 +790,9 @@ export function ForgotPassword() {
       sub="We'll email you a link to choose a new password."
     >
       {sent ? (
-        <div className="glass-card p-5 max-w-md">Check your inbox for the reset link.</div>
+        <div className="glass-card p-5 max-w-md">
+          Check your inbox for the reset link.
+        </div>
       ) : (
         <form onSubmit={submit} className="glass-card p-6 max-w-md space-y-4">
           <input
@@ -716,8 +803,13 @@ export function ForgotPassword() {
             placeholder="you@example.com"
             className="w-full rounded-lg bg-transparent border border-[var(--border-hi)] px-4 py-3 text-sm"
           />
-          <button className="btn-amber rounded-full px-6 py-3 w-full">Send reset link</button>
-          <Link to="/login" className="block text-center text-sm text-[var(--muted)]">
+          <button className="btn-amber rounded-full px-6 py-3 w-full">
+            Send reset link
+          </button>
+          <Link
+            to="/login"
+            className="block text-center text-sm text-[var(--muted)]"
+          >
             Back to sign in
           </Link>
         </form>
@@ -749,7 +841,9 @@ export function ResetPassword() {
           placeholder="New password"
           className="w-full rounded-lg bg-transparent border border-[var(--border-hi)] px-4 py-3 text-sm"
         />
-        <button className="btn-amber rounded-full px-6 py-3 w-full">Update password</button>
+        <button className="btn-amber rounded-full px-6 py-3 w-full">
+          Update password
+        </button>
       </form>
     </Shell>
   );
@@ -758,7 +852,8 @@ export function ResetPassword() {
 export function TraderStories() {
   const { settings, syncVersion } = useSettings();
   const storiesHidden =
-    settings.home_sections?.success_stories === false || settings.trust?.stories_enabled === false;
+    settings.home_sections?.success_stories === false ||
+    settings.trust?.stories_enabled === false;
   const [stories, setStories] = useState(null);
   const [storiesError, setStoriesError] = useState(false);
   const [form, setForm] = useState({
@@ -776,8 +871,14 @@ export function TraderStories() {
     if (storiesHidden) return;
     api
       .get("/stories")
-      .then((r) => { setStories(Array.isArray(r.data) ? r.data : []); setStoriesError(false); })
-      .catch(() => { setStories([]); setStoriesError(true); });
+      .then((r) => {
+        setStories(Array.isArray(r.data) ? r.data : []);
+        setStoriesError(false);
+      })
+      .catch(() => {
+        setStories([]);
+        setStoriesError(true);
+      });
   }, [storiesHidden, syncVersion]);
   if (storiesHidden) {
     return (
@@ -786,7 +887,10 @@ export function TraderStories() {
         title="Trader stories are currently hidden"
         sub="This section has been disabled by the administrator."
       >
-        <Link to="/" className="btn-ghost rounded-full px-5 py-2.5 text-sm inline-block">
+        <Link
+          to="/"
+          className="btn-ghost rounded-full px-5 py-2.5 text-sm inline-block"
+        >
           Back to home
         </Link>
       </Shell>
@@ -826,7 +930,10 @@ export function TraderStories() {
       title="Real traders. Real results."
       sub="Experiences shared by IndiFunded traders, reviewed by our team."
     >
-      <button onClick={() => setOpen((v) => !v)} className="btn-amber rounded-full px-6 py-3 mb-8">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="btn-amber rounded-full px-6 py-3 mb-8"
+      >
         {open ? "Close" : "Share your story"}
       </button>
       {open && (
@@ -879,7 +986,9 @@ export function TraderStories() {
             min="0"
             placeholder="Payout received ₹ (optional)"
             value={form.payout_amount}
-            onChange={(e) => setForm({ ...form, payout_amount: e.target.value })}
+            onChange={(e) =>
+              setForm({ ...form, payout_amount: e.target.value })
+            }
           />
           <select
             className={inp}
@@ -892,31 +1001,51 @@ export function TraderStories() {
               </option>
             ))}
           </select>
-          <button disabled={busy} className="btn-amber rounded-full px-6 py-2.5">
+          <button
+            disabled={busy}
+            className="btn-amber rounded-full px-6 py-2.5"
+          >
             {busy ? "Sending…" : "Submit for review"}
           </button>
         </form>
       )}
-      <SuccessStories stories={settings.trust?.stories} labels={settings.trust?.labels} />
+      <SuccessStories
+        stories={settings.trust?.stories}
+        labels={settings.trust?.labels}
+      />
       {stories === null ? (
         <div className="text-[var(--muted)]">Loading…</div>
       ) : storiesError ? (
-        <div className="glass-card p-6 text-[var(--muted)]">Stories could not be loaded. Please try again later.</div>
+        <div className="glass-card p-6 text-[var(--muted)]">
+          Stories could not be loaded. Please try again later.
+        </div>
       ) : stories.length === 0 ? null : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
           {stories.map((s) => {
             const media = getReviewMedia(s.video_url);
             return (
-              <article key={s.id} className="glass-card hover-lift p-6 flex flex-col">
+              <article
+                key={s.id}
+                className="glass-card hover-lift p-6 flex flex-col"
+              >
                 {media && (
                   <div className="aspect-video rounded-lg overflow-hidden mb-4">
-                    {media.kind === "video" ? <video src={media.url} controls playsInline className="w-full h-full" /> : <iframe
-                      src={media.url}
-                      title={s.title}
-                      className="w-full h-full"
-                      allowFullScreen
-                      loading="lazy"
-                    />}
+                    {media.kind === "video" ? (
+                      <video
+                        src={media.url}
+                        controls
+                        playsInline
+                        className="w-full h-full"
+                      />
+                    ) : (
+                      <iframe
+                        src={media.url}
+                        title={s.title}
+                        className="w-full h-full"
+                        allowFullScreen
+                        loading="lazy"
+                      />
+                    )}
                   </div>
                 )}
                 <div className="flex gap-0.5 text-[var(--accent-hi)]">
@@ -925,14 +1054,17 @@ export function TraderStories() {
                   ))}
                 </div>
                 <h3 className="font-display text-xl mt-3">{s.title}</h3>
-                <p className="text-sm text-[var(--muted)] mt-2 leading-relaxed flex-1">{s.story}</p>
+                <p className="text-sm text-[var(--muted)] mt-2 leading-relaxed flex-1">
+                  {s.story}
+                </p>
                 <div className="text-sm mt-4">
                   {s.name}
                   {s.city ? `, ${s.city}` : ""}
                   {s.payout_amount ? (
                     <span className="text-[var(--emerald)]">
                       {" "}
-                      · ₹{Number(s.payout_amount).toLocaleString("en-IN")} payout
+                      · ₹{Number(s.payout_amount).toLocaleString("en-IN")}{" "}
+                      payout
                     </span>
                   ) : null}
                 </div>

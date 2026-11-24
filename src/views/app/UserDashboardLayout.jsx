@@ -1,4 +1,11 @@
-import { NavLink, Navigate, Outlet, useNavigate, Link, useLocation } from "@/lib/router-compat";
+import {
+  NavLink,
+  Navigate,
+  Outlet,
+  useNavigate,
+  Link,
+  useLocation,
+} from "@/lib/router-compat";
 import Showcase3D from "../../components/Showcase3D";
 import { getRouteTransitionClass } from "../../components/MotionSystem";
 import { useAuth } from "../../context/AuthContext";
@@ -32,32 +39,74 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import BrandLogo from "../../components/BrandLogo";
+import { usePreloadRoutes } from "../../lib/usePreloadRoutes";
+
+const DASHBOARD_PRELOAD_PATHS = [
+  "/app",
+  "/app/accounts",
+  "/app/journal",
+  "/app/payouts",
+  "/app/certificates",
+  "/app/refer",
+  "/app/invoices",
+  "/app/settings",
+  "/app/notifications",
+  "/app/support",
+];
 
 const SIDEBAR_GROUPS = [
   {
     group: "TRADING",
     items: [
-      { to: "/app", label: "Dashboard", icon: LayoutDashboard, end: true, id: "dashboard" },
-      { to: "/app/accounts", label: "Accounts", icon: Briefcase, id: "accounts" },
-      { to: "/app/journal", label: "Trading Journal", icon: BookOpen, id: "journal" },
+      {
+        to: "/app",
+        label: "Dashboard",
+        icon: LayoutDashboard,
+        end: true,
+        id: "dashboard",
+      },
+      {
+        to: "/app/accounts",
+        label: "Accounts",
+        icon: Briefcase,
+        id: "accounts",
+      },
+      {
+        to: "/app/journal",
+        label: "Trading Journal",
+        icon: BookOpen,
+        id: "journal",
+      },
     ],
   },
   {
     group: "PAYOUTS",
     items: [
       { to: "/app/payouts", label: "Payouts", icon: Wallet, id: "payouts" },
-      { to: "/app/certificates", label: "Certificates", icon: Award, id: "certificates" },
+      {
+        to: "/app/certificates",
+        label: "Certificates",
+        icon: Award,
+        id: "certificates",
+      },
     ],
   },
   {
     group: "PARTNER",
-    items: [{ to: "/app/refer", label: "Refer a friend", icon: Users, id: "refer" }],
+    items: [
+      { to: "/app/refer", label: "Refer a friend", icon: Users, id: "refer" },
+    ],
   },
   {
     group: "ACCOUNT",
     items: [
       { to: "/app/invoices", label: "Invoices", icon: Receipt, id: "invoices" },
-      { to: "/app/settings", label: "Settings", icon: SettingsIcon, id: "settings" },
+      {
+        to: "/app/settings",
+        label: "Settings",
+        icon: SettingsIcon,
+        id: "settings",
+      },
     ],
   },
 ];
@@ -77,14 +126,24 @@ export default function UserDashboardLayout() {
   const [dashSummary, setDashSummary] = useState(null);
   const [notifs, setNotifs] = useState([]);
   const [tickets, setTickets] = useState([]);
-  const [chatForm, setChatForm] = useState({ subject: "", message: "", category: "Account" });
+  const [chatForm, setChatForm] = useState({
+    subject: "",
+    message: "",
+    category: "Account",
+  });
   const [sendingChat, setSendingChat] = useState(false);
 
   const acctMenuRef = useRef(null);
   const notifMenuRef = useRef(null);
   const userMenuRef = useRef(null);
 
-  const isTerminalRoute = (loc.pathname || "").replace(/\/+$/, "") === "/app/terminal";
+  const isTerminalRoute =
+    (loc.pathname || "").replace(/\/+$/, "") === "/app/terminal";
+
+  usePreloadRoutes(
+    DASHBOARD_PRELOAD_PATHS,
+    Boolean(user && user.role !== "admin" && !isTerminalRoute),
+  );
 
   useEffect(() => {
     setMobileOpen(false);
@@ -129,9 +188,12 @@ export default function UserDashboardLayout() {
   useEffect(() => {
     if (typeof document === "undefined") return;
     const onDocPointerDown = (e) => {
-      if (acctMenuRef.current && !acctMenuRef.current.contains(e.target)) setAcctMenuOpen(false);
-      if (notifMenuRef.current && !notifMenuRef.current.contains(e.target)) setNotifOpen(false);
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setUserMenuOpen(false);
+      if (acctMenuRef.current && !acctMenuRef.current.contains(e.target))
+        setAcctMenuOpen(false);
+      if (notifMenuRef.current && !notifMenuRef.current.contains(e.target))
+        setNotifOpen(false);
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target))
+        setUserMenuOpen(false);
     };
     const onKeyDown = (e) => {
       if (e.key === "Escape") {
@@ -161,7 +223,10 @@ export default function UserDashboardLayout() {
           <div className="h-8 w-32 rounded-lg bg-[var(--surface)] animate-pulse" />
           <div className="space-y-2 pt-4">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="h-9 rounded-xl bg-[var(--surface)]/70 animate-pulse" />
+              <div
+                key={i}
+                className="h-9 rounded-xl bg-[var(--surface)]/70 animate-pulse"
+              />
             ))}
           </div>
         </aside>
@@ -201,7 +266,9 @@ export default function UserDashboardLayout() {
       return null;
     }
     const nextUrl = `${loc.pathname || "/app"}${loc.search || ""}`;
-    return <Navigate to={`/login?next=${encodeURIComponent(nextUrl)}`} replace />;
+    return (
+      <Navigate to={`/login?next=${encodeURIComponent(nextUrl)}`} replace />
+    );
   }
   if (user.role === "admin") return <Navigate to="/admin" replace />;
 
@@ -236,8 +303,13 @@ export default function UserDashboardLayout() {
 
   const handleChatSubmit = async (e) => {
     e.preventDefault();
-    if (chatForm.subject.trim().length < 4 || chatForm.message.trim().length < 10) {
-      toast.error("Please add a subject (min 4 chars) and message (min 10 chars).");
+    if (
+      chatForm.subject.trim().length < 4 ||
+      chatForm.message.trim().length < 10
+    ) {
+      toast.error(
+        "Please add a subject (min 4 chars) and message (min 10 chars).",
+      );
       return;
     }
     setSendingChat(true);
@@ -247,7 +319,9 @@ export default function UserDashboardLayout() {
       setChatForm({ subject: "", message: "", category: "Account" });
       toast.success(`Message sent (${data.id})`);
     } catch (err) {
-      toast.error(formatApiError(err?.response?.data?.detail, "Could not send message"));
+      toast.error(
+        formatApiError(err?.response?.data?.detail, "Could not send message"),
+      );
     } finally {
       setSendingChat(false);
     }
@@ -256,7 +330,11 @@ export default function UserDashboardLayout() {
   const SidebarContent = (
     <div className="flex flex-col h-full">
       <div className="px-4 pt-5 pb-4 border-b border-[var(--border)]">
-        <Link to="/" className="flex items-center gap-2.5" onClick={() => setMobileOpen(false)}>
+        <Link
+          to="/"
+          className="flex items-center gap-2.5"
+          onClick={() => setMobileOpen(false)}
+        >
           <BrandLogo size="md" />
         </Link>
         <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-[var(--muted-2)] mt-1.5 pl-0.5">
@@ -300,7 +378,9 @@ export default function UserDashboardLayout() {
 
       <div className="p-3.5 border-t border-[var(--border)] space-y-2.5">
         <div className="flex items-center justify-between px-1 pb-1">
-          <span className="text-[11px] font-medium text-[var(--muted)]">Theme</span>
+          <span className="text-[11px] font-medium text-[var(--muted)]">
+            Theme
+          </span>
           <div className="seg !p-0.5" role="group" aria-label="Theme mode">
             {[
               ["light", "Light", Sun],
@@ -330,7 +410,10 @@ export default function UserDashboardLayout() {
           <Plus size={14} /> Buy new account
         </Link>
         <div className="flex items-center justify-between px-1 text-[11px] text-[var(--muted-2)]">
-          <Link to="/rules" className="hover:text-[var(--text)] transition-colors">
+          <Link
+            to="/rules"
+            className="hover:text-[var(--text)] transition-colors"
+          >
             Trading rules
           </Link>
           <span className="inline-flex items-center gap-1 font-mono text-[10px]">
@@ -430,7 +513,10 @@ export default function UserDashboardLayout() {
                 <span className="hidden sm:inline font-mono text-[11px] text-[var(--muted)]">
                   {formatINR(totalEquity)} · {accounts.length}
                 </span>
-                <ChevronDown size={13} className="text-[var(--muted)] shrink-0" />
+                <ChevronDown
+                  size={13}
+                  className="text-[var(--muted)] shrink-0"
+                />
               </button>
 
               {acctMenuOpen && (
@@ -453,7 +539,8 @@ export default function UserDashboardLayout() {
                               {a.plan_name || "Evaluation"}
                             </div>
                             <div className="text-[10px] font-mono text-[var(--muted-2)] truncate">
-                              {a.account_number || a.id} · {a.status || "Active"}
+                              {a.account_number || a.id} ·{" "}
+                              {a.status || "Active"}
                             </div>
                           </div>
                           <div className="text-right shrink-0">
@@ -501,8 +588,8 @@ export default function UserDashboardLayout() {
             </div>
 
             <span className="hidden lg:inline-flex items-center gap-1.5 text-[11px] font-mono text-[var(--muted-2)] px-2.5 py-1 rounded-lg bg-[var(--bg-2)] border border-[var(--border)]">
-              <ShieldCheck size={12} className="text-[var(--emerald)]" /> Simulated trading
-              environment
+              <ShieldCheck size={12} className="text-[var(--emerald)]" />{" "}
+              Simulated trading environment
             </span>
           </div>
 
@@ -515,7 +602,11 @@ export default function UserDashboardLayout() {
               aria-label="Toggle theme"
               className="w-9 h-9 rounded-xl border border-[var(--border-hi)] bg-[var(--surface)] hover:border-[var(--accent)] grid place-items-center text-[var(--muted)] hover:text-[var(--text)] transition-colors"
             >
-              {resolvedTheme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+              {resolvedTheme === "dark" ? (
+                <Sun size={15} />
+              ) : (
+                <Moon size={15} />
+              )}
             </button>
 
             <div className="relative" ref={notifMenuRef}>
@@ -541,7 +632,9 @@ export default function UserDashboardLayout() {
               {notifOpen && (
                 <div className="absolute right-0 mt-2 w-80 rounded-2xl border border-[var(--border-hi)] bg-[var(--bg-1)] shadow-2xl p-3 z-50">
                   <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]">
-                    <span className="text-xs font-semibold text-[var(--text)]">Notifications</span>
+                    <span className="text-xs font-semibold text-[var(--text)]">
+                      Notifications
+                    </span>
                     {unreadNotifs > 0 && (
                       <button
                         type="button"
@@ -556,7 +649,9 @@ export default function UserDashboardLayout() {
                     {notifs.length ? (
                       notifs.slice(0, 5).map((n) => (
                         <div key={n.id} className="py-2.5 text-xs">
-                          <div className="font-medium text-[var(--text)]">{n.title || n.t}</div>
+                          <div className="font-medium text-[var(--text)]">
+                            {n.title || n.t}
+                          </div>
                           <div className="text-[var(--muted)] text-[11px] mt-0.5 line-clamp-2">
                             {n.body || n.d}
                           </div>
@@ -632,23 +727,27 @@ export default function UserDashboardLayout() {
                     onClick={() => setUserMenuOpen(false)}
                     className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs text-[var(--text)] hover:bg-[var(--bg-2)]"
                   >
-                    <CandlestickChart size={14} className="text-[var(--emerald)]" /> Launch Web
-                    Terminal
+                    <CandlestickChart
+                      size={14}
+                      className="text-[var(--emerald)]"
+                    />{" "}
+                    Launch Web Terminal
                   </Link>
                   <Link
                     to="/app/journal"
                     onClick={() => setUserMenuOpen(false)}
                     className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs text-[var(--text)] hover:bg-[var(--bg-2)]"
                   >
-                    <BookOpen size={14} className="text-[var(--accent)]" /> Trading Journal
+                    <BookOpen size={14} className="text-[var(--accent)]" />{" "}
+                    Trading Journal
                   </Link>
                   <Link
                     to="/app/settings"
                     onClick={() => setUserMenuOpen(false)}
                     className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs text-[var(--text)] hover:bg-[var(--bg-2)]"
                   >
-                    <SettingsIcon size={14} className="text-[var(--muted)]" /> Settings &amp;
-                    Profile
+                    <SettingsIcon size={14} className="text-[var(--muted)]" />{" "}
+                    Settings &amp; Profile
                   </Link>
                   <button
                     type="button"
@@ -690,8 +789,12 @@ export default function UserDashboardLayout() {
               <div className="flex items-center gap-2">
                 <MessageSquare size={15} />
                 <div>
-                  <div className="text-xs font-semibold">IndiFunded Trader Desk</div>
-                  <div className="text-[10px] opacity-85">Direct support ticket</div>
+                  <div className="text-xs font-semibold">
+                    IndiFunded Trader Desk
+                  </div>
+                  <div className="text-[10px] opacity-85">
+                    Direct support ticket
+                  </div>
                 </div>
               </div>
               <button
@@ -715,7 +818,9 @@ export default function UserDashboardLayout() {
                       className="p-2.5 rounded-xl border border-[var(--border)] bg-[var(--bg-2)] text-xs"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium text-[var(--text)] truncate">{t.subject}</span>
+                        <span className="font-medium text-[var(--text)] truncate">
+                          {t.subject}
+                        </span>
                         <span className="text-[10px] font-mono text-[var(--emerald)] shrink-0">
                           {t.status}
                         </span>
@@ -735,25 +840,33 @@ export default function UserDashboardLayout() {
                 <select
                   className="input-dark !py-1.5 !text-xs"
                   value={chatForm.category}
-                  onChange={(e) => setChatForm((f) => ({ ...f, category: e.target.value }))}
+                  onChange={(e) =>
+                    setChatForm((f) => ({ ...f, category: e.target.value }))
+                  }
                 >
-                  {["Account", "Trading", "Payouts", "KYC", "Other"].map((c) => (
-                    <option key={c}>{c}</option>
-                  ))}
+                  {["Account", "Trading", "Payouts", "KYC", "Other"].map(
+                    (c) => (
+                      <option key={c}>{c}</option>
+                    ),
+                  )}
                 </select>
                 <input
                   type="text"
                   placeholder="Subject (min 4 chars)"
                   className="input-dark !py-1.5 !text-xs"
                   value={chatForm.subject}
-                  onChange={(e) => setChatForm((f) => ({ ...f, subject: e.target.value }))}
+                  onChange={(e) =>
+                    setChatForm((f) => ({ ...f, subject: e.target.value }))
+                  }
                 />
                 <textarea
                   rows={3}
                   placeholder="How can our desk help you today?"
                   className="input-dark !min-h-[70px] !py-1.5 !text-xs"
                   value={chatForm.message}
-                  onChange={(e) => setChatForm((f) => ({ ...f, message: e.target.value }))}
+                  onChange={(e) =>
+                    setChatForm((f) => ({ ...f, message: e.target.value }))
+                  }
                 />
                 <div className="flex items-center justify-between gap-2">
                   <Link
