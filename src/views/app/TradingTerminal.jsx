@@ -2127,6 +2127,7 @@ export function TradingTerminal({ embedded = false } = {}) {
           setFeedbackForm={setFeedbackForm}
           sendingFeedback={sendingFeedback}
           submitFeedback={submitFeedback}
+          marketStatus={marketStatus}
         />
       </div>
     );
@@ -4752,6 +4753,7 @@ export function TradingTerminal({ embedded = false } = {}) {
         setFeedbackForm={setFeedbackForm}
         sendingFeedback={sendingFeedback}
         submitFeedback={submitFeedback}
+        marketStatus={marketStatus}
       />
     </div>
   );
@@ -4786,6 +4788,7 @@ function TerminalDialogs({
   setFeedbackForm,
   sendingFeedback,
   submitFeedback,
+  marketStatus = "CLOSED",
 }) {
   const stepData = GUIDE_STEPS[guideStep] || GUIDE_STEPS[0];
   return (

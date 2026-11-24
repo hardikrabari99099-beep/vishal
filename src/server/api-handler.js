@@ -6484,6 +6484,11 @@ async function route(request, path) {
 
     if (qr?.image_url) {
       const { imageUrl, upiString } = extractRazorpayQrPayload(qr);
+      const siteUpiId = str(site?.contact?.upi_id).trim() || "indifunded@upi";
+      const siteBrand = str(site?.brand?.name).trim() || "IndiFunded";
+      const fallbackUpiLink = `upi://pay?pa=${encodeURIComponent(siteUpiId)}&pn=${encodeURIComponent(siteBrand)}&am=${Number(pr.final).toFixed(2)}&cu=INR&tn=${encodeURIComponent(`IndiFunded ${plan.name}`)}`;
+      const resolvedUpiLink = upiString || fallbackUpiLink;
+      const upiLinkIsRazorpay = Boolean(upiString);
       let qrDataUrl = "";
       if (upiString) {
         qrDataUrl = await QRCode.toDataURL(upiString, {
@@ -6511,8 +6516,9 @@ async function route(request, path) {
         payment_method: "razorpay_qr",
         razorpay_qr_id: qr.id,
         razorpay_qr_image: imageUrl || qr.image_url,
-        upi_link: upiString || null,
-        upi_id: str(site?.contact?.upi_id).trim() || "indifunded@upi",
+        upi_link: resolvedUpiLink,
+        upi_link_is_razorpay: upiLinkIsRazorpay,
+        upi_id: siteUpiId,
         razorpay_payment_id: null,
         ...cust,
         status: "pending_payment",
@@ -6525,6 +6531,9 @@ async function route(request, path) {
         qr_external_url: qr.image_url,
         ...(qrDataUrl ? { qr_data_url: qrDataUrl } : {}),
         qr_id: qr.id,
+        upi_id: siteUpiId,
+        upi_link: resolvedUpiLink,
+        upi_link_is_razorpay: upiLinkIsRazorpay,
         amount: pr.final,
         amount_paise: paise,
         payment_mode: "razorpay_qr",
@@ -6644,6 +6653,15 @@ async function route(request, path) {
         });
       }
       if (fetched.kind === "upi") {
+        if (order.upi_link !== fetched.upiLink) {
+          await db
+            .put("orders", {
+              ...order,
+              upi_link: fetched.upiLink,
+              upi_link_is_razorpay: true,
+            })
+            .catch(() => null);
+        }
         const png = await QRCode.toBuffer(fetched.upiLink, {
           width: 420,
           margin: 2,
@@ -6737,7 +6755,16 @@ async function route(request, path) {
       }
       return json({ status: "completed", paid: true });
     }
-    return json({ status: order.status, paid: false });
+    return json({
+      status: order.status,
+      paid: false,
+      ...(order.upi_link
+        ? {
+            upi_link: order.upi_link,
+            upi_link_is_razorpay: Boolean(order.upi_link_is_razorpay),
+          }
+        : {}),
+    });
   }
 
   if (is("POST", "/orders/razorpay/checkout-order")) {

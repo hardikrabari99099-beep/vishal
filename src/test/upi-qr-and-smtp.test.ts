@@ -204,4 +204,24 @@ describe("SMTP port failover & UPI QR fallback", () => {
     expect(confirmRes.status).toBe(200);
     expect(confirmRes.data.status).toBe("pending_verification");
   });
+
+  it("builds direct GPay, PhonePe, Paytm, and BHIM/UPI deep-links with the exact order amount", async () => {
+    const { buildUpiAppOptions } = await import("@/lib/upi");
+    const opts = buildUpiAppOptions({
+      upiLink: "upi://pay?pa=rzp@icici&pn=IndiFunded&tr=ORD123&cu=INR",
+      upiId: "indifunded@upi",
+      amount: 1499,
+      note: "Starter Challenge",
+    });
+
+    expect(opts.upiUrl).toContain("upi://pay?");
+    expect(opts.upiUrl).toContain("pa=rzp%40icici");
+    expect(opts.upiUrl).toContain("am=1499.00");
+
+    const byId = Object.fromEntries(opts.apps.map((a) => [a.id, a.href]));
+    expect(byId["gpay"]).toMatch(/^tez:\/\/upi\/pay\?.*am=1499\.00/);
+    expect(byId["phonepe"]).toMatch(/^phonepe:\/\/pay\?.*am=1499\.00/);
+    expect(byId["paytm"]).toMatch(/^paytmmp:\/\/pay\?.*am=1499\.00/);
+    expect(byId["bhim"]).toMatch(/^upi:\/\/pay\?.*am=1499\.00/);
+  });
 });

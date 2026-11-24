@@ -201,6 +201,11 @@ describe("Official Razorpay SDK initialization, payloads, and verification", () 
     expect(okRes.data.qr_id).toBe("qr_Test123");
     expect(okRes.data.qr_image).toBe("https://rzp.io/i/mock-qr-code");
     expect(okRes.data.razorpay_configured).toBe(true);
+    expect(okRes.data.upi_id).toBeTruthy();
+    expect(okRes.data.upi_link).toContain("upi://pay?");
+    expect(okRes.data.upi_link).toContain(
+      `am=${Number(okRes.data.amount).toFixed(2)}`,
+    );
 
     // Case 2: Razorpay QR Code API fails (e.g. Smart QR not enabled), pre-creates Checkout order + dynamic UPI QR fallback
     qrCreateSpy.mockRejectedValueOnce({

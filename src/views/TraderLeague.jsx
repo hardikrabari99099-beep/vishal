@@ -2,10 +2,19 @@ import { useEffect, useState } from "react";
 import { api, formatINR, formatApiError } from "../lib/api";
 import { useSEO } from "../lib/useSEO";
 import { openUpiCheckout } from "../lib/razorpay";
+import { buildUpiAppOptions } from "../lib/upi";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "sonner";
 import { useNavigate } from "@/lib/router-compat";
-import { Trophy, ShieldCheck, Loader2, CheckCircle2, Copy } from "lucide-react";
+import {
+  Trophy,
+  ShieldCheck,
+  Loader2,
+  CheckCircle2,
+  Copy,
+  ChevronDown,
+  Smartphone,
+} from "lucide-react";
 
 export default function TraderLeague() {
   useSEO({
@@ -33,6 +42,7 @@ export default function TraderLeague() {
   const [step, setStep] = useState(1); // 1: form, 2: UPI QR, 3: success
   const [loading, setLoading] = useState(false);
   const [qrOrder, setQrOrder] = useState(null);
+  const [showUpiApps, setShowUpiApps] = useState(false);
   const [utr, setUtr] = useState("");
   const [submittingUtr, setSubmittingUtr] = useState(false);
 
@@ -81,6 +91,7 @@ export default function TraderLeague() {
       const { data: co } = await api.post("/league/register", form);
       if (co?.payment_mode === "upi_qr" && co?.qr_image) {
         setQrOrder(co);
+        setShowUpiApps(false);
         setUtr("");
         setStep(2);
         return;
@@ -394,14 +405,70 @@ export default function TraderLeague() {
               </div>
             )}
           </div>
-          {qrOrder.upi_link && (
-            <a
-              href={qrOrder.upi_link}
-              className="btn-amber w-full rounded-full px-6 py-3 text-sm font-semibold inline-flex items-center justify-center gap-2"
-            >
-              <ShieldCheck size={16} /> Open UPI App
-            </a>
-          )}
+          {qrOrder.upi_link &&
+            (() => {
+              const payableAmount = qrOrder.amount ?? amount;
+              const upiOptions = buildUpiAppOptions({
+                upiLink: qrOrder.upi_link,
+                upiId: qrOrder.upi_id || "",
+                brandName: "IndiFunded",
+                amount: payableAmount,
+                note: "Trader League",
+              });
+              return (
+                <div className="space-y-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowUpiApps((v) => !v)}
+                    aria-expanded={showUpiApps}
+                    className="btn-amber w-full rounded-full px-6 py-3 text-sm font-semibold inline-flex items-center justify-center gap-2"
+                  >
+                    <Smartphone size={16} />
+                    <span>Continue with UPI</span>
+                    <ChevronDown
+                      size={16}
+                      className={`transition-transform ${showUpiApps ? "rotate-180" : ""}`}
+                    />
+                  </button>
+                  {showUpiApps && (
+                    <div className="rounded-xl border border-[var(--border-hi)] bg-[var(--bg-1)] p-3.5 space-y-2.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium text-white">
+                          Select UPI app to pay directly
+                        </span>
+                        <span className="font-mono font-semibold text-[var(--accent)]">
+                          {formatINR(payableAmount)}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {upiOptions.apps.map((app) => (
+                          <a
+                            key={app.id}
+                            href={app.href}
+                            className="flex items-center gap-2.5 rounded-xl border border-[var(--border-hi)] bg-[var(--bg-2)] hover:border-[var(--accent)] px-3 py-2.5 transition-colors"
+                          >
+                            <span
+                              className="w-8 h-8 rounded-lg grid place-items-center text-[10px] font-bold text-white shrink-0"
+                              style={{ backgroundColor: app.color }}
+                            >
+                              {app.badge}
+                            </span>
+                            <div className="min-w-0 leading-tight">
+                              <div className="text-xs font-semibold text-white truncate">
+                                {app.name}
+                              </div>
+                              <div className="text-[10px] font-mono text-[var(--muted-2)]">
+                                Pay {formatINR(payableAmount)}
+                              </div>
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           <form
             onSubmit={confirmLeagueUtr}
             className="space-y-3 pt-2 border-t border-[var(--border)]"

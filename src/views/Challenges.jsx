@@ -20,6 +20,7 @@ import {
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { openUpiCheckout } from "../lib/razorpay";
+import { buildUpiAppOptions } from "../lib/upi";
 import { toast } from "sonner";
 import {
   CheckCircle2,
@@ -35,6 +36,8 @@ import {
   Award,
   Clock,
   Copy,
+  ChevronDown,
+  Smartphone,
 } from "lucide-react";
 
 export default function Challenges() {
@@ -65,6 +68,7 @@ export default function Challenges() {
   const [qr, setQr] = useState(null);
   const [qrImgFailed, setQrImgFailed] = useState(false);
   const [qrImgProxyTried, setQrImgProxyTried] = useState(false);
+  const [showUpiApps, setShowUpiApps] = useState(false);
   const [utr, setUtr] = useState("");
   const [submittingUtr, setSubmittingUtr] = useState(false);
   const pollRef = useRef(null);
@@ -279,6 +283,7 @@ export default function Challenges() {
       setUtr("");
       setQrImgFailed(false);
       setQrImgProxyTried(false);
+      setShowUpiApps(false);
       const { data } = await api.post(
         "/orders/razorpay/create",
         buildOrderPayload(),
@@ -337,6 +342,16 @@ export default function Challenges() {
         if (data.paid) {
           clearInterval(pollRef.current);
           setStep(3);
+        } else if (data.upi_link && data.upi_link !== qr.upi_link) {
+          setQr((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  upi_link: data.upi_link,
+                  upi_link_is_razorpay: Boolean(data.upi_link_is_razorpay),
+                }
+              : prev,
+          );
         }
       } catch (_e) {
         /* keep polling */
@@ -1185,86 +1200,173 @@ export default function Challenges() {
                   </div>
                 )}
 
-                {qr?.qr_image && (
-                  <div className="mt-4" data-testid="upi-app-buttons">
-                    {qr?.razorpay_configured ||
-                    qr?.payment_mode !== "upi_qr" ? (
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          try {
-                            const co =
-                              qr?.razorpay_order_id && qr?.key_id
-                                ? {
-                                    order_id: qr.order_id,
-                                    razorpay_order_id: qr.razorpay_order_id,
-                                    key_id: qr.key_id,
-                                    amount_paise: qr.amount_paise,
-                                    customer: qr.customer,
-                                    description: qr.description,
-                                  }
-                                : (
-                                    await api.post(
-                                      "/orders/razorpay/checkout-order",
-                                      {
-                                        ...buildOrderPayload(),
-                                        order_id: qr?.order_id,
-                                      },
-                                    )
-                                  ).data;
-                            await openUpiCheckout(co, async (rsp) => {
-                              try {
-                                await api.post("/orders/razorpay/verify", {
-                                  razorpay_order_id: rsp.razorpay_order_id,
-                                  razorpay_payment_id: rsp.razorpay_payment_id,
-                                  razorpay_signature: rsp.razorpay_signature,
-                                });
-                                clearInterval(pollRef.current);
-                                setStep(3);
-                                toast.success("Payment successful!");
-                              } catch (e) {
-                                toast.error(
-                                  formatApiError(e.response?.data?.detail) ||
-                                    "Payment could not be verified. Contact support.",
-                                );
-                              }
-                            });
-                          } catch (e) {
-                            toast.error(
-                              formatApiError(e.response?.data?.detail) ||
-                                "Could not start UPI payment. Please try again.",
-                            );
-                          }
-                        }}
-                        className="btn-amber w-full rounded-full px-6 py-3.5 text-sm font-semibold inline-flex items-center justify-center gap-2"
-                        data-testid="pay-with-upi"
+                {qr?.qr_image &&
+                  (() => {
+                    const payableAmount =
+                      qr?.amount ??
+                      (couponInfo
+                        ? couponInfo.final_amount
+                        : buying?.challenge_fee);
+                    const upiOptions = buildUpiAppOptions({
+                      upiLink: qr?.upi_link || "",
+                      upiId: qr?.upi_id || "",
+                      brandName: "IndiFunded",
+                      amount: payableAmount,
+                      note: buying?.name
+                        ? `IndiFunded ${buying.name}`
+                        : "IndiFunded Challenge",
+                    });
+                    const hasDirectUpi = upiOptions.upiUrl !== "#";
+                    return (
+                      <div
+                        className="mt-4 space-y-3"
+                        data-testid="upi-app-buttons"
                       >
-                        <ShieldCheck size={16} /> Pay with your UPI app
-                      </button>
-                    ) : (
-                      <a
-                        href={qr.upi_link || "#"}
-                        className="btn-amber w-full rounded-full px-6 py-3.5 text-sm font-semibold inline-flex items-center justify-center gap-2"
-                        data-testid="pay-with-upi"
-                      >
-                        <ShieldCheck size={16} /> Pay with your UPI app
-                      </a>
-                    )}
-                    <div className="text-[11px] text-[var(--muted-2)] mt-2 text-center">
-                      On mobile, this opens your UPI app (GPay / PhonePe / Paytm
-                      / BHIM). On desktop, scan the QR above.
-                    </div>
-                  </div>
-                )}
+                        <button
+                          type="button"
+                          onClick={() => setShowUpiApps((v) => !v)}
+                          aria-expanded={showUpiApps}
+                          className="btn-amber w-full rounded-full px-6 py-3.5 text-sm font-semibold inline-flex items-center justify-center gap-2"
+                          data-testid="pay-with-upi"
+                        >
+                          <Smartphone size={16} />
+                          <span>Continue with UPI</span>
+                          <ChevronDown
+                            size={16}
+                            className={`transition-transform ${showUpiApps ? "rotate-180" : ""}`}
+                          />
+                        </button>
 
-                {qr?.payment_mode === "upi_qr" && (
+                        {showUpiApps && (
+                          <div
+                            className="rounded-xl border border-[var(--border-hi)] bg-[var(--bg-2)] p-3.5 space-y-3"
+                            data-testid="upi-app-chooser"
+                          >
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="font-medium text-white">
+                                Select UPI app to pay directly
+                              </span>
+                              <span className="font-mono font-semibold text-[var(--accent)]">
+                                {formatINR(payableAmount)}
+                              </span>
+                            </div>
+
+                            {hasDirectUpi && (
+                              <div className="grid grid-cols-2 gap-2">
+                                {upiOptions.apps.map((app) => (
+                                  <a
+                                    key={app.id}
+                                    href={app.href}
+                                    data-testid={`upi-app-${app.id}`}
+                                    className="flex items-center gap-2.5 rounded-xl border border-[var(--border-hi)] bg-[var(--bg-1)] hover:border-[var(--accent)] px-3 py-2.5 transition-colors"
+                                  >
+                                    <span
+                                      className="w-8 h-8 rounded-lg grid place-items-center text-[10px] font-bold text-white shrink-0"
+                                      style={{ backgroundColor: app.color }}
+                                    >
+                                      {app.badge}
+                                    </span>
+                                    <div className="min-w-0 leading-tight">
+                                      <div className="text-xs font-semibold text-white truncate">
+                                        {app.name}
+                                      </div>
+                                      <div className="text-[10px] font-mono text-[var(--muted-2)]">
+                                        Pay {formatINR(payableAmount)}
+                                      </div>
+                                    </div>
+                                  </a>
+                                ))}
+                              </div>
+                            )}
+
+                            {(qr?.razorpay_configured ||
+                              qr?.payment_mode !== "upi_qr") && (
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  try {
+                                    const co =
+                                      qr?.razorpay_order_id && qr?.key_id
+                                        ? {
+                                            order_id: qr.order_id,
+                                            razorpay_order_id:
+                                              qr.razorpay_order_id,
+                                            key_id: qr.key_id,
+                                            amount_paise: qr.amount_paise,
+                                            customer: qr.customer,
+                                            description: qr.description,
+                                          }
+                                        : (
+                                            await api.post(
+                                              "/orders/razorpay/checkout-order",
+                                              {
+                                                ...buildOrderPayload(),
+                                                order_id: qr?.order_id,
+                                              },
+                                            )
+                                          ).data;
+                                    await openUpiCheckout(co, async (rsp) => {
+                                      try {
+                                        await api.post(
+                                          "/orders/razorpay/verify",
+                                          {
+                                            razorpay_order_id:
+                                              rsp.razorpay_order_id,
+                                            razorpay_payment_id:
+                                              rsp.razorpay_payment_id,
+                                            razorpay_signature:
+                                              rsp.razorpay_signature,
+                                          },
+                                        );
+                                        clearInterval(pollRef.current);
+                                        setStep(3);
+                                        toast.success("Payment successful!");
+                                      } catch (e) {
+                                        toast.error(
+                                          formatApiError(
+                                            e.response?.data?.detail,
+                                          ) ||
+                                            "Payment could not be verified. Contact support.",
+                                        );
+                                      }
+                                    });
+                                  } catch (e) {
+                                    toast.error(
+                                      formatApiError(
+                                        e.response?.data?.detail,
+                                      ) ||
+                                        "Could not start UPI payment. Please try again.",
+                                    );
+                                  }
+                                }}
+                                className="btn-ghost w-full rounded-xl px-4 py-2.5 text-xs font-medium inline-flex items-center justify-center gap-2 border border-[var(--border-hi)] hover:border-[var(--accent)]"
+                                data-testid="pay-with-razorpay-upi"
+                              >
+                                <ShieldCheck size={14} /> Open Razorpay UPI
+                                Checkout
+                              </button>
+                            )}
+
+                            <div className="text-[11px] text-[var(--muted-2)] text-center">
+                              Tap any UPI app on mobile to open direct payment
+                              for {formatINR(payableAmount)}. On desktop, scan
+                              the Razorpay QR above.
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                {(qr?.payment_mode === "upi_qr" ||
+                  (showUpiApps && qr?.upi_link_is_razorpay === false)) && (
                   <form
                     onSubmit={submitUtrPayment}
                     className="mt-5 pt-4 border-t border-[var(--border)] space-y-3"
                   >
                     <Label className="text-xs text-[var(--muted)]">
-                      After paying via QR, enter your 12-digit UPI UTR /
-                      Reference Number
+                      After paying via UPI app or QR, enter your 12-digit UPI
+                      UTR / Reference Number
                     </Label>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <Input
