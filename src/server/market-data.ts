@@ -1796,7 +1796,25 @@ async function fetchYahooChart(
     limit: 400,
     tvRes: "5",
   };
-  const dedupeKey = `${inst.providerSymbol}:${cfg.interval}:${cfg.range}`;
+  return fetchYahooChartWithQuery(
+    inst,
+    tf,
+    cfg.interval,
+    cfg.range,
+    cfg.limit,
+    tf !== "1D",
+  );
+}
+
+async function fetchYahooChartWithQuery(
+  inst: MarketInstrument,
+  tfLabel: string,
+  interval: string,
+  range: string,
+  limit: number,
+  cleanFlats = true,
+): Promise<{ quote: MarketQuote; candles: MarketCandle[] } | null> {
+  const dedupeKey = `${inst.providerSymbol}:${interval}:${range}`;
   const existing = inflightYahoo.get(dedupeKey);
   if (existing) return existing;
 
@@ -1805,7 +1823,7 @@ async function fetchYahooChart(
     for (const host of hosts) {
       const url = `https://${host}/v8/finance/chart/${encodeURIComponent(
         inst.providerSymbol,
-      )}?interval=${cfg.interval}&range=${cfg.range}`;
+      )}?interval=${interval}&range=${range}`;
       try {
         const resp = await fetch(url, {
           headers: {
@@ -1900,7 +1918,7 @@ async function fetchYahooChart(
           candles.push({
             i: candles.length,
             time: ts[idx] ?? 0,
-            label: formatCandleLabel(ts[idx] ?? 0, tf),
+            label: formatCandleLabel(ts[idx] ?? 0, tfLabel),
             open: normOpen,
             high: normHigh,
             low: normLow,
@@ -1948,8 +1966,10 @@ async function fetchYahooChart(
               ? new Date(Number(m["regularMarketTime"]) * 1000).toISOString()
               : new Date().toISOString(),
         };
-        const sliced = candles.slice(-cfg.limit);
-        const cleaned = cleanIntradayFlatBars(sliced, tf).map((b, idx) => ({
+        const sliced = candles.slice(-limit);
+        const cleaned = (
+          cleanFlats ? cleanIntradayFlatBars(sliced, tfLabel) : sliced
+        ).map((b, idx) => ({
           ...b,
           i: idx,
         }));
@@ -1965,6 +1985,86 @@ async function fetchYahooChart(
 
   inflightYahoo.set(dedupeKey, task);
   return task;
+}
+
+async function fetchYahooDailyFromHourly(
+  inst: MarketInstrument,
+): Promise<{ quote: MarketQuote; candles: MarketCandle[] } | null> {
+  const hourly = await fetchYahooChartWithQuery(
+    inst,
+    "1h",
+    "60m",
+    "1y",
+    2500,
+    false,
+  );
+  if (!hourly || hourly.candles.length < 15) return null;
+
+  const byDay = new Map<string, MarketCandle>();
+  for (const bar of hourly.candles) {
+    const dayKey = getIstDateKey(new Date(bar.time * 1000));
+    const existing = byDay.get(dayKey);
+    if (!existing) {
+      byDay.set(dayKey, {
+        i: byDay.size,
+        time: bar.time,
+        label: formatCandleLabel(bar.time, "1D"),
+        open: bar.open,
+        high: bar.high,
+        low: bar.low,
+        close: bar.close,
+        volume: Number(bar.volume || 0),
+      });
+    } else {
+      existing.high = +Math.max(existing.high, bar.high).toFixed(2);
+      existing.low = +Math.min(existing.low, bar.low).toFixed(2);
+      existing.close = bar.close;
+      existing.volume += Number(bar.volume || 0);
+    }
+  }
+
+  const days = Array.from(byDay.values());
+  if (days.length < 5) return null;
+
+  const last = days[days.length - 1]!;
+  const lastDayKey = getIstDateKey(new Date(last.time * 1000));
+  const quoteDayKey = getIstDateKey(
+    new Date(hourly.quote.updatedAt || Date.now()),
+  );
+  if (lastDayKey === quoteDayKey && hourly.quote.ltp > 0) {
+    last.close = +hourly.quote.ltp.toFixed(2);
+    last.high = +Math.max(
+      last.high,
+      hourly.quote.high || last.high,
+      last.close,
+    ).toFixed(2);
+    last.low = +Math.min(
+      last.low,
+      hourly.quote.low || last.low,
+      last.close,
+    ).toFixed(2);
+  }
+
+  const prevBar = days.length >= 2 ? days[days.length - 2] : null;
+  const ltp = hourly.quote.ltp || last.close;
+  const prevClose = prevBar?.close || hourly.quote.prevClose || last.open;
+  const change = +(ltp - prevClose).toFixed(2);
+  const changePct =
+    prevClose > 0 ? +((change / prevClose) * 100).toFixed(2) : 0;
+
+  return {
+    quote: {
+      ...hourly.quote,
+      ltp: +ltp.toFixed(2),
+      prevClose: +prevClose.toFixed(2),
+      open: last.open,
+      high: last.high,
+      low: last.low,
+      change,
+      changePct,
+    },
+    candles: days.map((b, idx) => ({ ...b, i: idx })),
+  };
 }
 
 export function cleanIntradayFlatBars(
@@ -2056,7 +2156,7 @@ async function fetchUnifiedChart(
   inst: MarketInstrument,
   tf = "5m",
 ): Promise<{ quote: MarketQuote; candles: MarketCandle[] } | null> {
-  // Start both providers concurrently, but prefer Yahoo when valid because
+  // Start both providers concurrently, preferring Yahoo when valid because
   // unauthenticated TradingView WS sessions truncate NSE bars at 15:10 IST.
   const yahooPromise = fetchYahooChart(inst, tf);
   const tvPromise = tryTradingViewChartHistory(inst, tf);
@@ -2064,10 +2164,25 @@ async function fetchUnifiedChart(
   if (yahoo && yahoo.candles.length >= 15) {
     return yahoo;
   }
-  const tv = await tvPromise;
+
+  // Some indices (e.g. BSE-BANK.BO / BANKEX) only return 1 bar on Yahoo 1d,
+  // while 60m?range=1y returns 1,700+ real bars across ~245 trading sessions.
+  if (tf === "1D") {
+    const aggDaily = await fetchYahooDailyFromHourly(inst);
+    if (aggDaily && aggDaily.candles.length >= 15) {
+      return aggDaily;
+    }
+  }
+
+  // Never let a stalled TradingView WS block indefinitely
+  const tv = await Promise.race([
+    tvPromise,
+    new Promise<null>((r) => setTimeout(() => r(null), 1600)),
+  ]);
   if (tv && tv.candles.length >= 15) {
     return tv;
   }
+
   const partial =
     yahoo && tv
       ? yahoo.candles.length >= tv.candles.length
@@ -2077,16 +2192,23 @@ async function fetchUnifiedChart(
   if (partial && partial.candles.length >= 5) {
     return partial;
   }
-  // If short timeframe (e.g. 1m/3m) had sparse or empty bars, fall back to 5m then 1D real history
+
+  // If short timeframe (e.g. 1m/3m) had sparse or empty bars, fall back to 5m -> 1h -> 1D real history
   if (tf !== "5m" && tf !== "1D") {
     const fb5m = await fetchYahooChart(inst, "5m");
     if (fb5m && fb5m.candles.length >= 5) return fb5m;
   }
+  if (tf !== "1h" && tf !== "1D") {
+    const fb1h = await fetchYahooChart(inst, "1h");
+    if (fb1h && fb1h.candles.length >= 5) return fb1h;
+  }
   if (tf !== "1D") {
     const fb1d = await fetchYahooChart(inst, "1D");
     if (fb1d && fb1d.candles.length >= 5) return fb1d;
+    const fbAgg = await fetchYahooDailyFromHourly(inst);
+    if (fbAgg && fbAgg.candles.length >= 5) return fbAgg;
   }
-  return partial;
+  return null;
 }
 
 function deriveOptionQuoteFromUnderlying(
@@ -2358,36 +2480,66 @@ function buildBaselineCandles(
     timestamps.reverse();
   }
 
-  // Realistic per-bar volatility (~0.8% daily, scaled by sqrt of bar length over a
-  // 6.25h session) and built backwards from the LTP so the last bar never jumps.
-  const seed = seedSymbolHash(inst.symbol + tf);
-  const sigma = 0.008 * Math.sqrt(Math.min(1, stepSec / 22500));
+  // Realistic multi-regime random walk (PRNG Mulberry32) built backwards from LTP so the
+  // last bar never jumps, without artificial sine-wave periodicity or sawtooth volume bars.
+  const seed = seedSymbolHash(inst.symbol + tf) || 1337;
+  let prngState = seed >>> 0;
+  const rand = () => {
+    prngState = (prngState + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(prngState ^ (prngState >>> 15), 1 | prngState);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const randNorm = () => (rand() + rand() + rand() - 1.5) * 1.15;
+
+  const sigma = 0.0085 * Math.sqrt(Math.min(1, stepSec / 22500));
   const n = timestamps.length;
   const opens: number[] = new Array(n);
   const closes: number[] = new Array(n);
   let next = quote.ltp;
+  let regimeDrift = 0;
+  let regimeLen = 0;
   for (let i = n - 1; i >= 0; i--) {
-    const wave =
-      Math.sin((i + (seed % 17)) * 0.34) * 0.6 +
-      Math.cos((i + seed) * 0.17) * 0.4;
+    if (regimeLen <= 0) {
+      regimeLen = 4 + Math.floor(rand() * 14);
+      regimeDrift = (rand() - 0.5) * 0.45;
+    }
+    regimeLen--;
+    // Occasional consolidation or momentum candles mixed with organic noise
+    const shock = rand() < 0.08 ? randNorm() * 1.9 : randNorm();
+    const stepReturn = (regimeDrift + shock * 0.85) * sigma;
     closes[i] = next;
-    opens[i] = next / (1 + wave * sigma);
+    opens[i] = next / (1 + stepReturn);
     next = opens[i]!;
   }
   const candles: MarketCandle[] = [];
   for (let i = 0; i < n; i++) {
     const open = +opens[i]!.toFixed(2);
     const close = +closes[i]!.toFixed(2);
-    const spread = Math.max(0.05, open * sigma * 0.5);
-    const high = +(
-      Math.max(open, close) +
-      spread * (0.3 + ((i + seed) % 5) * 0.15)
-    ).toFixed(2);
-    const low = +(
-      Math.min(open, close) -
-      spread * (0.3 + ((i + seed + 2) % 5) * 0.15)
-    ).toFixed(2);
+    const bodyRange = Math.abs(close - open);
+    const baseSpread = Math.max(0.05, open * sigma * 0.45);
+    const upWick = Math.max(
+      baseSpread * 0.15,
+      (baseSpread + bodyRange * 0.4) * rand() * 0.9,
+    );
+    const dnWick = Math.max(
+      baseSpread * 0.15,
+      (baseSpread + bodyRange * 0.4) * rand() * 0.9,
+    );
+    const high = +(Math.max(open, close) + upWick).toFixed(2);
+    const low = +(Math.min(open, close) - dnWick).toFixed(2);
     const ts = timestamps[i]!;
+    // Organic U-shaped session volume (higher around open/close, varied by bar range)
+    const dIst = new Date(ts * 1000 + 5.5 * 3600 * 1000);
+    const mins = dIst.getUTCHours() * 60 + dIst.getUTCMinutes();
+    const sessionPos = Math.max(0, Math.min(1, (mins - 555) / 375));
+    const uFactor =
+      tf === "1D" ? 1 : 0.75 + 1.4 * Math.pow(sessionPos - 0.5, 2) * 4;
+    const rangeBoost =
+      0.7 + Math.min(2.2, (high - low) / Math.max(0.05, baseSpread));
+    const vol = Math.round(
+      14000 * uFactor * rangeBoost * (0.55 + rand() * 0.95),
+    );
     candles.push({
       i,
       time: ts,
@@ -2396,7 +2548,7 @@ function buildBaselineCandles(
       high,
       low,
       close,
-      volume: 15000 + ((seed + i * 7919) % 45000),
+      volume: vol,
     });
   }
   return { quote, candles, isBaseline: true };
@@ -2699,14 +2851,14 @@ export async function getCandles(
     };
   }
 
-  if (cached) {
+  if (cached && cached.data.candles.length >= 5) {
     const needsUpgrade =
       cached.data.isBaseline || Date.now() - cached.ts >= ttl;
     if (needsUpgrade && !inflightCandleKeys.has(key)) {
       inflightCandleKeys.add(key);
       fetchUnifiedChart(inst, normTf)
         .then((fetched) => {
-          if (fetched && fetched.candles.length) {
+          if (fetched && fetched.candles.length >= 5) {
             candleCache.set(key, {
               data: { ...fetched, isBaseline: false },
               ts: Date.now(),
@@ -2740,7 +2892,7 @@ export async function getCandles(
   inflightCandleKeys.add(key);
   const fetchPromise = fetchUnifiedChart(inst, normTf)
     .then((fetched) => {
-      if (fetched && fetched.candles.length) {
+      if (fetched && fetched.candles.length >= 5) {
         candleCache.set(key, {
           data: { ...fetched, isBaseline: false },
           ts: Date.now(),
@@ -2758,13 +2910,13 @@ export async function getCandles(
   const fastBudgetMs = process.env["VITEST"]
     ? 40
     : hasKnownFallbackSpot(inst)
-      ? 2500
-      : 4500;
+      ? 4500
+      : 5500;
   const fetched = await Promise.race([
     fetchPromise,
     new Promise<null>((r) => setTimeout(() => r(null), fastBudgetMs)),
   ]);
-  if (fetched && fetched.candles.length) {
+  if (fetched && fetched.candles.length >= 5) {
     return {
       symbol: inst.symbol,
       tf: normTf,
@@ -2783,7 +2935,7 @@ export async function getCandles(
   }
 
   const cachedAfterRace = candleCache.get(key);
-  if (cachedAfterRace && cachedAfterRace.data.candles.length) {
+  if (cachedAfterRace && cachedAfterRace.data.candles.length >= 5) {
     return {
       symbol: inst.symbol,
       tf: normTf,

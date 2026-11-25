@@ -256,7 +256,7 @@ function candlesMatch(prevList, nextList) {
   );
 }
 
-const MKT_STORAGE_KEY = "if_mkt_cache_v3";
+const MKT_STORAGE_KEY = "if_mkt_cache_v4";
 let persistTimer = null;
 let sessionCacheHydrated = false;
 
@@ -282,7 +282,12 @@ function ensureSessionMarketCacheHydrated() {
     }
     if (parsed?.candles && typeof parsed.candles === "object") {
       for (const [k, v] of Object.entries(parsed.candles)) {
-        if (Array.isArray(v?.candles) && !candleMemCache.has(k)) {
+        if (
+          Array.isArray(v?.candles) &&
+          v.candles.length >= 5 &&
+          !v.isBaseline &&
+          !candleMemCache.has(k)
+        ) {
           const cleanQuote = v.quote?.tickLive
             ? { ...v.quote, tickLive: false }
             : v.quote || null;
@@ -312,7 +317,12 @@ function schedulePersistMarketCache() {
       }
       const candles = {};
       const entries = Array.from(candleMemCache.entries())
-        .filter(([, v]) => !v?.isBaseline)
+        .filter(
+          ([, v]) =>
+            !v?.isBaseline &&
+            Array.isArray(v?.candles) &&
+            v.candles.length >= 5,
+        )
         .slice(-10);
       for (const [k, v] of entries) {
         candles[k] = {
@@ -814,126 +824,6 @@ export function useLiveMarketQuotes(
   };
 }
 
-const CLIENT_FALLBACK_SPOTS = {
-  NIFTY: 25450,
-  BANKNIFTY: 62350,
-  SENSEX: 82600,
-  FINNIFTY: 28280,
-  MIDCPNIFTY: 17870,
-  NIFTYNEXT50: 68500,
-  BANKEX: 70170,
-  INDIAVIX: 14.2,
-  RELIANCE: 1345,
-  HDFCBANK: 1750,
-  TCS: 3800,
-  INFY: 1850,
-  ICICIBANK: 1300,
-  SBIN: 810,
-};
-
-function hashStr(s) {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
-  return Math.abs(h);
-}
-
-function getStepSeconds(tf) {
-  return tf === "1m"
-    ? 60
-    : tf === "3m"
-      ? 180
-      : tf === "15m"
-        ? 900
-        : tf === "30m"
-          ? 1800
-          : tf === "1h"
-            ? 3600
-            : tf === "1D"
-              ? 86400
-              : 300;
-}
-
-function buildInstantClientCandles(symbol, tf) {
-  const sym = String(symbol || "NIFTY").toUpperCase();
-  const cachedQuote = quoteMemCache.get(sym)?.quote;
-  const spot = Number(cachedQuote?.ltp) || CLIENT_FALLBACK_SPOTS[sym] || 1500;
-  const prevClose =
-    Number(cachedQuote?.prevClose) || +(spot * 0.996).toFixed(2);
-  const count = 200;
-  const stepSec = getStepSeconds(tf);
-  const timestamps = [];
-  if (tf === "1D") {
-    let cursorSec = Math.floor(Date.now() / 86400000) * 86400 + 4 * 3600 + 1800;
-    while (timestamps.length < count) {
-      const istDay = new Date(cursorSec * 1000 + 5.5 * 3600 * 1000).getUTCDay();
-      if (istDay !== 0 && istDay !== 6) timestamps.push(cursorSec);
-      cursorSec -= 86400;
-    }
-    timestamps.reverse();
-  } else {
-    let cursorSec = Math.floor(Date.now() / (stepSec * 1000)) * stepSec;
-    while (timestamps.length < count) {
-      const dIst = new Date(cursorSec * 1000 + 5.5 * 3600 * 1000);
-      const day = dIst.getUTCDay();
-      const mins = dIst.getUTCHours() * 60 + dIst.getUTCMinutes();
-      if (
-        day !== 0 &&
-        day !== 6 &&
-        mins >= 9 * 60 + 15 &&
-        mins <= 15 * 60 + 30
-      ) {
-        timestamps.push(cursorSec);
-      }
-      cursorSec -= stepSec;
-    }
-    timestamps.reverse();
-  }
-
-  const seed = hashStr(`${sym}:${tf}`);
-  // Same realistic volatility as the server fallback, built backwards from spot
-  const sigma = 0.008 * Math.sqrt(Math.min(1, stepSec / 22500));
-  const n = timestamps.length;
-  const opens = new Array(n);
-  const closes = new Array(n);
-  let next = spot;
-  for (let i = n - 1; i >= 0; i--) {
-    const wave =
-      Math.sin((i + (seed % 13)) * 0.34) * 0.6 +
-      Math.cos((i + seed) * 0.19) * 0.4;
-    closes[i] = next;
-    opens[i] = next / (1 + wave * sigma);
-    next = opens[i];
-  }
-  const bars = [];
-  for (let i = 0; i < n; i++) {
-    const open = +opens[i].toFixed(2);
-    const close = +closes[i].toFixed(2);
-    const spread = Math.max(0.05, open * sigma * 0.5);
-    bars.push({
-      i,
-      time: timestamps[i],
-      open,
-      high: +(Math.max(open, close) + spread * 0.6).toFixed(2),
-      low: +(Math.min(open, close) - spread * 0.6).toFixed(2),
-      close,
-      volume: 12000 + ((seed + i * 7919) % 35000),
-    });
-  }
-  return {
-    candles: bars,
-    quote: cachedQuote || {
-      symbol: sym,
-      ltp: spot,
-      prevClose,
-      change: +(spot - prevClose).toFixed(2),
-      changePct: prevClose
-        ? +(((spot - prevClose) / prevClose) * 100).toFixed(2)
-        : 0,
-      source: "Warm",
-    },
-  };
-}
-
 function prefetchCandleKey(symbol, tf) {
   if (!symbol || typeof window === "undefined") return;
   const sym = String(symbol).toUpperCase();
@@ -1124,10 +1014,11 @@ export function useLiveCandles(symbol, tf = "5m", options = {}) {
             clearTimeout(emptyRetryTimerRef.current);
             emptyRetryTimerRef.current = null;
           }
-          const isBaseline = Boolean(data?.isBaseline);
+          const isBaseline =
+            Boolean(data?.isBaseline) || nextCandles.length < 5;
           const existingEntry = candleMemCache.get(cacheKey);
           const hasExistingReal =
-            Boolean(existingEntry?.candles?.length) &&
+            Boolean(existingEntry?.candles?.length >= 5) &&
             !existingEntry?.isBaseline;
           if (!isBaseline || !hasExistingReal) {
             if (!candlesMatch(prevCandlesRef.current, nextCandles)) {

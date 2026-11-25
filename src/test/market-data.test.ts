@@ -357,4 +357,97 @@ describe("intraday flat settlement bar cleanup and symbol aliases", () => {
     const minLo = Math.min(...deepOtm.candles.map((c) => c.low));
     expect(maxHi).toBeGreaterThan(minLo);
   });
+
+  it("aggregates real 60m bars into multi-day 1D candles when Yahoo 1d returns only 1 bar (BANKEX)", async () => {
+    const startSec = Math.floor(Date.parse("2026-10-01T03:45:00Z") / 1000);
+    const hourlyTs: number[] = [];
+    const hourlyOpen: number[] = [];
+    const hourlyHigh: number[] = [];
+    const hourlyLow: number[] = [];
+    const hourlyClose: number[] = [];
+    for (let d = 0; d < 25; d++) {
+      for (let h = 0; h < 6; h++) {
+        hourlyTs.push(startSec + d * 86400 + h * 3600);
+        const base = 70000 + d * 65 + h * 8;
+        hourlyOpen.push(base);
+        hourlyHigh.push(base + 45);
+        hourlyLow.push(base - 35);
+        hourlyClose.push(base + 15);
+      }
+    }
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("BSE-BANK.BO") && url.includes("interval=1d")) {
+        return new Response(
+          JSON.stringify({
+            chart: {
+              result: [
+                {
+                  meta: {
+                    regularMarketPrice: 71750,
+                    previousClose: 70410,
+                  },
+                  timestamp: [startSec + 24 * 86400],
+                  indicators: {
+                    quote: [
+                      {
+                        open: [71280],
+                        high: [72140],
+                        low: [71250],
+                        close: [71750],
+                        volume: [0],
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          }),
+          { status: 200 },
+        );
+      }
+      if (url.includes("BSE-BANK.BO") && url.includes("interval=60m")) {
+        return new Response(
+          JSON.stringify({
+            chart: {
+              result: [
+                {
+                  meta: {
+                    regularMarketPrice: 71750,
+                    regularMarketDayHigh: 72140,
+                    regularMarketDayLow: 71250,
+                    regularMarketTime: startSec + 24 * 86400 + 5 * 3600,
+                  },
+                  timestamp: hourlyTs,
+                  indicators: {
+                    quote: [
+                      {
+                        open: hourlyOpen,
+                        high: hourlyHigh,
+                        low: hourlyLow,
+                        close: hourlyClose,
+                        volume: hourlyTs.map(() => 0),
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          }),
+          { status: 200 },
+        );
+      }
+      return new Response("", { status: 503 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    // Clear module cache entry via unique synthetic check or dynamic fresh call after mocking
+    vi.resetModules();
+    const freshMod = await import("@/server/market-data");
+    const res = await freshMod.getCandles("BANKEX", "1D");
+    expect(res.candles.length).toBeGreaterThanOrEqual(20);
+    expect(res.isBaseline).toBe(false);
+    expect(res.candles[res.candles.length - 1]?.close).toBe(71750);
+  });
 });
