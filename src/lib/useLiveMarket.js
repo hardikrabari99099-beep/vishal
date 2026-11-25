@@ -1127,7 +1127,8 @@ export function useLiveCandles(symbol, tf = "5m", options = {}) {
           const isBaseline = Boolean(data?.isBaseline);
           const existingEntry = candleMemCache.get(cacheKey);
           const hasExistingReal =
-            Boolean(existingEntry?.candles?.length) && !existingEntry?.isBaseline;
+            Boolean(existingEntry?.candles?.length) &&
+            !existingEntry?.isBaseline;
           if (!isBaseline || !hasExistingReal) {
             if (!candlesMatch(prevCandlesRef.current, nextCandles)) {
               prevCandlesRef.current = nextCandles;

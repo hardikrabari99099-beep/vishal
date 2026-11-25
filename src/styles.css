@@ -150,8 +150,17 @@ body {
   -webkit-font-smoothing: antialiased;
   font-feature-settings: "cv11";
   background:
-    radial-gradient(1200px 600px at 80% -10%, rgba(26, 122, 74, 0.14), transparent 60%),
-    radial-gradient(900px 500px at -10% 30%, rgba(39, 163, 101, 0.06), transparent 60%), var(--bg);
+    radial-gradient(
+      1200px 600px at 80% -10%,
+      rgba(26, 122, 74, 0.14),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 500px at -10% 30%,
+      rgba(39, 163, 101, 0.06),
+      transparent 60%
+    ),
+    var(--bg);
 }
 
 code {
@@ -278,7 +287,8 @@ html.reveal-ready [data-reveal="slide-right"]:not(.is-visible) {
 }
 html.reveal-ready [data-reveal="3d"]:not(.is-visible) {
   opacity: 0;
-  transform: perspective(1000px) rotateY(-6deg) rotateX(6deg) translate3d(0, 18px, -16px);
+  transform: perspective(1000px) rotateY(-6deg) rotateX(6deg)
+    translate3d(0, 18px, -16px);
 }
 [data-reveal].is-visible {
   opacity: 1;
@@ -358,7 +368,13 @@ html.reveal-ready [data-reveal="3d"]:not(.is-visible) {
   background-size: 14px 14px;
 }
 .ticker {
-  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 12%,
+    #000 88%,
+    transparent
+  );
 }
 .marquee {
   animation: marquee 40s linear infinite;
@@ -662,7 +678,11 @@ html.reveal-ready [data-reveal="3d"]:not(.is-visible) {
 }
 
 .card-panel {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.02),
+    rgba(255, 255, 255, 0.01)
+  );
   border: 1px solid var(--border);
   border-radius: 18px;
 }
@@ -870,10 +890,16 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: "Outfit", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  font-family:
+    "Outfit", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   font-weight: 700;
   font-size: 34px;
-  background: radial-gradient(circle at 30% 25%, #4be0aa 0%, #29d39a 40%, #0f8a5e 100%);
+  background: radial-gradient(
+    circle at 30% 25%,
+    #4be0aa 0%,
+    #29d39a 40%,
+    #0f8a5e 100%
+  );
   color: #041b13;
   box-shadow:
     inset 0 6px 12px rgba(255, 255, 255, 0.35),
@@ -1146,7 +1172,11 @@ select {
 }
 .glass-card {
   position: relative;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.048), rgba(255, 255, 255, 0.018));
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.048),
+    rgba(255, 255, 255, 0.018)
+  );
   -webkit-backdrop-filter: blur(6px) saturate(120%);
   backdrop-filter: blur(6px) saturate(120%);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -1166,7 +1196,11 @@ select {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(120% 60% at 50% 0%, rgba(255, 255, 255, 0.08), transparent 55%);
+  background: radial-gradient(
+    120% 60% at 50% 0%,
+    rgba(255, 255, 255, 0.08),
+    transparent 55%
+  );
   pointer-events: none;
 }
 .glass-card:hover {
@@ -1240,15 +1274,27 @@ select {
   height: 260px;
   right: 22%;
   bottom: -80px;
-  background: radial-gradient(circle at 50% 40%, rgba(255, 209, 102, 0.18), transparent 70%);
+  background: radial-gradient(
+    circle at 50% 40%,
+    rgba(255, 209, 102, 0.18),
+    transparent 70%
+  );
   animation: pb-c 32s ease-in-out infinite;
 }
 .page-bg-3d .pb-blob {
   position: absolute;
   inset: -20%;
   background:
-    radial-gradient(50% 40% at 20% 30%, rgba(41, 211, 154, 0.11), transparent 65%),
-    radial-gradient(40% 50% at 80% 70%, rgba(90, 120, 255, 0.09), transparent 65%);
+    radial-gradient(
+      50% 40% at 20% 30%,
+      rgba(41, 211, 154, 0.11),
+      transparent 65%
+    ),
+    radial-gradient(
+      40% 50% at 80% 70%,
+      rgba(90, 120, 255, 0.09),
+      transparent 65%
+    );
   will-change: transform;
   animation: pb-blob 30s ease-in-out infinite alternate;
 }
@@ -1489,8 +1535,8 @@ select {
 @keyframes tx-3d-page {
   from {
     opacity: 0;
-    transform: perspective(1400px) rotateX(3.5deg) rotateY(-2deg) translate3d(0, 18px, -24px)
-      scale(0.985);
+    transform: perspective(1400px) rotateX(3.5deg) rotateY(-2deg)
+      translate3d(0, 18px, -24px) scale(0.985);
   }
   to {
     opacity: 1;
@@ -1627,7 +1673,8 @@ select {
   border-radius: 14px;
   border: 1px solid color-mix(in oklab, var(--emerald) 35%, var(--border));
   background: color-mix(in oklab, var(--surface) 88%, transparent);
-  box-shadow: 0 12px 32px -12px color-mix(in oklab, var(--emerald) 55%, transparent);
+  box-shadow: 0 12px 32px -12px
+    color-mix(in oklab, var(--emerald) 55%, transparent);
 }
 .if-preloader-brand {
   font-size: 1rem;
@@ -2655,20 +2702,28 @@ select {
 .home-primary-cta {
   position: relative;
   overflow: hidden;
-  box-shadow: 0 8px 26px -10px color-mix(in oklab, var(--home-green) 55%, transparent);
+  box-shadow: 0 8px 26px -10px
+    color-mix(in oklab, var(--home-green) 55%, transparent);
   transition:
     transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 0.2s ease;
 }
 .home-primary-cta:hover {
   transform: translate3d(0, -1px, 0);
-  box-shadow: 0 12px 32px -10px color-mix(in oklab, var(--home-green) 70%, transparent);
+  box-shadow: 0 12px 32px -10px
+    color-mix(in oklab, var(--home-green) 70%, transparent);
 }
 .home-ticker {
   overflow: hidden;
   border-bottom: 1px solid var(--home-line);
   padding: 14px 0;
-  mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent);
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    black 10%,
+    black 90%,
+    transparent
+  );
 }
 .home-ticker-track,
 .review-marquee-track {
@@ -2699,7 +2754,13 @@ select {
 }
 .review-marquee {
   overflow: hidden;
-  mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent);
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    black 8%,
+    black 92%,
+    transparent
+  );
   padding: 6px 0;
 }
 .review-marquee-track {
@@ -2967,7 +3028,11 @@ select {
   justify-content: center;
   gap: 14px;
   background:
-    radial-gradient(circle at 50% 25%, color-mix(in oklab, var(--home-green) 24%, transparent), transparent 65%),
+    radial-gradient(
+      circle at 50% 25%,
+      color-mix(in oklab, var(--home-green) 24%, transparent),
+      transparent 65%
+    ),
     linear-gradient(160deg, var(--bg-1), var(--bg));
 }
 .wall-video-avatar {
@@ -2999,7 +3064,10 @@ select {
 .wall-video-shade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(transparent 50%, color-mix(in oklab, var(--bg) 92%, transparent));
+  background: linear-gradient(
+    transparent 50%,
+    color-mix(in oklab, var(--bg) 92%, transparent)
+  );
 }
 .wall-video-sound {
   position: absolute;
@@ -3082,7 +3150,13 @@ select {
 /* ===== Our Traders: horizontal auto-scrolling video cards ===== */
 .trader-marquee-wrap {
   overflow: hidden;
-  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 6%,
+    #000 94%,
+    transparent
+  );
 }
 .trader-marquee {
   display: flex;
@@ -3928,7 +4002,13 @@ select {
 }
 .trust-stories-marquee-wrap {
   overflow: hidden;
-  mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 5%,
+    #000 95%,
+    transparent
+  );
   padding: 4px 0;
 }
 .trust-stories-marquee-track {
@@ -3958,7 +4038,13 @@ select {
   overflow-y: hidden;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 4%,
+    #000 96%,
+    transparent
+  );
   padding: 6px 0;
 }
 .whp-marquee-wrap::-webkit-scrollbar {
@@ -4163,7 +4249,8 @@ select {
   .home-blog-item:hover,
   .glass-card:hover {
     transform: translate3d(0, -3px, 0);
-    box-shadow: 0 18px 38px -26px color-mix(in oklab, var(--emerald) 55%, transparent);
+    box-shadow: 0 18px 38px -26px
+      color-mix(in oklab, var(--emerald) 55%, transparent);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -4352,7 +4439,11 @@ select {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(90% 55% at 15% 0%, rgba(41, 211, 154, 0.12), transparent 60%);
+  background: radial-gradient(
+    90% 55% at 15% 0%,
+    rgba(41, 211, 154, 0.12),
+    transparent 60%
+  );
   pointer-events: none;
 }
 .platform-mock--glass:hover {
@@ -4466,8 +4557,8 @@ select {
 }
 .board-row {
   display: grid;
-  grid-template-columns: 2.6rem 1fr auto auto;
-  gap: 1rem;
+  grid-template-columns: 2.6rem 2.75rem 1fr auto auto;
+  gap: 0.9rem;
   align-items: center;
   padding: 0.85rem 1.1rem;
   border-radius: 1rem;
@@ -4493,6 +4584,26 @@ select {
   font-weight: 600;
   background: var(--border);
 }
+.board-avatar {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: var(--bg-2);
+  border: 1px solid var(--border-hi);
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.board-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 .board-row.is-top-1 .board-rank {
   background: var(--gold, #e8b04a);
   color: var(--bg-1);
@@ -4508,6 +4619,15 @@ select {
 .board-row.is-top {
   border-color: color-mix(in oklab, var(--emerald) 35%, transparent);
 }
+.board-name {
+  min-width: 0;
+}
+.board-name strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .board-name small,
 .board-stat small {
   display: block;
@@ -4519,7 +4639,19 @@ select {
 }
 @media (max-width: 600px) {
   .board-row {
-    grid-template-columns: 2.4rem 1fr auto;
+    grid-template-columns: 2.2rem 2.35rem 1fr auto;
+    gap: 0.65rem;
+    padding: 0.75rem 0.85rem;
+  }
+  .board-rank {
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.82rem;
+  }
+  .board-avatar {
+    width: 2.35rem;
+    height: 2.35rem;
+    font-size: 0.85rem;
   }
   .board-stat {
     display: none;
@@ -5378,9 +5510,13 @@ select {
 }
 
 .fx-tilt-3d .is-tilting {
-  transform: perspective(920px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg))
-    translate3d(0, -3px, 0) !important;
-  border-color: color-mix(in oklab, var(--emerald) 42%, var(--border-hi)) !important;
+  transform: perspective(920px) rotateX(var(--rx, 0deg))
+    rotateY(var(--ry, 0deg)) translate3d(0, -3px, 0) !important;
+  border-color: color-mix(
+    in oklab,
+    var(--emerald) 42%,
+    var(--border-hi)
+  ) !important;
   box-shadow:
     0 20px 44px -22px rgba(0, 0, 0, 0.55),
     0 0 28px -10px rgba(8, 153, 129, 0.24) !important;

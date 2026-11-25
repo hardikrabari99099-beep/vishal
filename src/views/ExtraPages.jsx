@@ -1029,19 +1029,30 @@ export function TraderStories() {
                 className="glass-card hover-lift p-6 flex flex-col"
               >
                 {media && (
-                  <div className="aspect-video rounded-lg overflow-hidden mb-4">
+                  <div className="aspect-video rounded-lg overflow-hidden mb-4 bg-black/50">
                     {media.kind === "video" ? (
                       <video
                         src={media.url}
                         controls
+                        autoPlay
+                        muted
+                        loop
                         playsInline
-                        className="w-full h-full"
+                        preload="auto"
+                        onLoadedData={(e) => {
+                          e.currentTarget.defaultMuted = true;
+                          e.currentTarget.muted = true;
+                          e.currentTarget.play?.().catch(() => {});
+                        }}
+                        className="w-full h-full object-cover"
                       />
                     ) : (
                       <iframe
                         src={media.url}
                         title={s.title}
                         className="w-full h-full"
+                        allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                        referrerPolicy="strict-origin-when-cross-origin"
                         allowFullScreen
                         loading="lazy"
                       />

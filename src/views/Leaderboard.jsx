@@ -2,7 +2,14 @@ import { useEffect, useState } from "react";
 import { api, formatINR } from "../lib/api";
 import { useSEO } from "../lib/useSEO";
 import { useSettings } from "../context/SettingsContext";
-import { Trophy, Crown, Medal, Award, TrendingUp, CheckCircle2 } from "lucide-react";
+import {
+  Trophy,
+  Crown,
+  Medal,
+  Award,
+  TrendingUp,
+  CheckCircle2,
+} from "lucide-react";
 
 const rankIcon = (i) => {
   if (i === 0) return <Crown size={20} className="text-[#f5b638]" />;
@@ -15,6 +22,7 @@ export default function Leaderboard() {
   const { syncVersion } = useSettings();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [brokenAvatars, setBrokenAvatars] = useState({});
   useSEO({
     title: "Trader Leaderboard — Top Funded Traders on IndiFunded",
     description:
@@ -36,15 +44,21 @@ export default function Leaderboard() {
       <div className="chip mb-4 inline-flex">
         <Trophy size={12} className="mr-1.5" /> Leaderboard
       </div>
-      <h1 className="font-display text-4xl md:text-5xl max-w-3xl" data-testid="leaderboard-title">
+      <h1
+        className="font-display text-4xl md:text-5xl max-w-3xl"
+        data-testid="leaderboard-title"
+      >
         Top IndiFunded Traders
       </h1>
       <p className="text-[var(--muted)] mt-4 max-w-2xl">
-        Ranked by verified lifetime payouts. Updated in real time as our funded traders earn.
+        Ranked by verified lifetime payouts. Updated in real time as our funded
+        traders earn.
       </p>
 
       {loading ? (
-        <div className="mt-12 text-center text-[var(--muted-2)]">Loading leaderboard…</div>
+        <div className="mt-12 text-center text-[var(--muted-2)]">
+          Loading leaderboard…
+        </div>
       ) : items.length === 0 ? (
         <div className="mt-12 card-panel p-10 text-center">
           <Trophy size={40} className="mx-auto text-[var(--muted-2)] mb-4" />
@@ -57,6 +71,8 @@ export default function Leaderboard() {
         <div className="mt-10 grid gap-3">
           {items.map((t, i) => {
             const isTop3 = i < 3;
+            const avatarKey = t.id || i;
+            const showImg = Boolean(t.avatar_url && !brokenAvatars[avatarKey]);
             return (
               <div
                 key={t.id}
@@ -69,12 +85,20 @@ export default function Leaderboard() {
                   </div>
                 </div>
                 <div className="w-12 h-12 md:w-14 md:h-14 rounded-full overflow-hidden bg-[var(--bg-2)] border border-[var(--border-hi)] shrink-0">
-                  {t.avatar_url ? (
+                  {showImg ? (
                     <img
                       src={t.avatar_url}
                       alt={t.name}
                       className="w-full h-full object-cover"
                       loading="lazy"
+                      decoding="async"
+                      referrerPolicy="no-referrer"
+                      onError={() =>
+                        setBrokenAvatars((prev) => ({
+                          ...prev,
+                          [avatarKey]: true,
+                        }))
+                      }
                     />
                   ) : (
                     <div className="w-full h-full grid place-items-center font-display text-lg text-[var(--muted)]">
@@ -84,9 +108,14 @@ export default function Leaderboard() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <div className="font-display text-base md:text-lg truncate">{t.name}</div>
+                    <div className="font-display text-base md:text-lg truncate">
+                      {t.name}
+                    </div>
                     {t.verified && (
-                      <CheckCircle2 size={14} className="text-[var(--emerald)] shrink-0" />
+                      <CheckCircle2
+                        size={14}
+                        className="text-[var(--emerald)] shrink-0"
+                      />
                     )}
                   </div>
                   <div className="text-xs text-[var(--muted-2)] font-mono uppercase tracking-wider mt-1 flex items-center gap-2">
@@ -100,7 +129,9 @@ export default function Leaderboard() {
                     {t.rank_note && (
                       <>
                         <span>·</span>
-                        <span className="text-[var(--accent)]">{t.rank_note}</span>
+                        <span className="text-[var(--accent)]">
+                          {t.rank_note}
+                        </span>
                       </>
                     )}
                   </div>

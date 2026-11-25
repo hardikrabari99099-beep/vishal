@@ -1,19 +1,37 @@
 import { useCallback, useState } from "react";
 import { Play, Quote, Star, TrendingUp, Video, Volume2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "./ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "./ui/dialog";
 import { useSettings } from "../context/SettingsContext";
-import { getReviewMedia, getReviewPreviewUrl, getReviewThumbnail } from "../lib/review-media";
+import {
+  getReviewMedia,
+  getReviewPreviewUrl,
+  getReviewThumbnail,
+} from "../lib/review-media";
 import { useOffscreenPause } from "../lib/useOffscreenPause";
 
 function safePlayMedia(el, mutedFallback = false) {
   if (!el) return;
   try {
-    if (mutedFallback) el.muted = true;
+    el.playsInline = true;
+    el.setAttribute?.("playsinline", "");
+    el.setAttribute?.("webkit-playsinline", "");
+    if (mutedFallback) {
+      el.defaultMuted = true;
+      el.muted = true;
+      el.setAttribute?.("muted", "");
+    }
     const attempt = el.play?.();
     if (attempt && typeof attempt.catch === "function") {
       attempt.catch(() => {
+        el.defaultMuted = true;
         el.muted = true;
+        el.setAttribute?.("muted", "");
         try {
           el.play?.().catch(() => {});
         } catch {
@@ -58,14 +76,18 @@ function VideoTile({ item, onOpen, decorative, shouldAutoplay }) {
             muted
             loop
             playsInline
-            preload="metadata"
+            preload="auto"
+            onLoadedMetadata={(e) => safePlayMedia(e.currentTarget, true)}
+            onLoadedData={(e) => safePlayMedia(e.currentTarget, true)}
+            onCanPlay={(e) => safePlayMedia(e.currentTarget, true)}
             onError={() => setVideoFailed(true)}
           />
         ) : (
           <iframe
             src={previewUrl}
             title={`${displayName}'s review preview`}
-            allow="autoplay; encrypted-media; picture-in-picture"
+            allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+            referrerPolicy="strict-origin-when-cross-origin"
             loading="lazy"
             tabIndex={-1}
             aria-hidden="true"
@@ -143,16 +165,20 @@ export default function ClientReviews({ quotesOnly = false, heading = "" }) {
   const hc = settings.home_copy || {};
   const videos = quotesOnly
     ? []
-    : (cfg.items || []).filter((item) => item.enabled !== false && getReviewMedia(item.url || ""));
+    : (cfg.items || []).filter(
+        (item) => item.enabled !== false && getReviewMedia(item.url || ""),
+      );
   const reviews = settings.testimonials || [];
   const [active, setActive] = useState(null);
   const [failed, setFailed] = useState(false);
-  const showWall = cfg.enabled !== false && (videos.length > 0 || reviews.length > 0);
+  const showWall =
+    cfg.enabled !== false && (videos.length > 0 || reviews.length > 0);
   const [wallRef, wallPaused] = useOffscreenPause("320px 0px", false, showWall);
   const columnCount = useIsMobile(901) ? 2 : 3;
   const media = active ? getReviewMedia(active.url) : null;
   const isVerticalModal =
-    media?.kind === "video" || /youtube\.com\/shorts\//i.test(String(active?.url || ""));
+    media?.kind === "video" ||
+    /youtube\.com\/shorts\//i.test(String(active?.url || ""));
 
   const videoRefCallback = useCallback((el) => {
     safePlayMedia(el, false);
@@ -171,7 +197,9 @@ export default function ClientReviews({ quotesOnly = false, heading = "" }) {
   const indexes = tiles.map((_, index) => index);
   const columns = Array.from({ length: columnCount }, (_, column) => {
     const own = indexes.filter((index) => index % columnCount === column);
-    return own.length >= 2 ? own : [...indexes.slice(column), ...indexes.slice(0, column)];
+    return own.length >= 2
+      ? own
+      : [...indexes.slice(column), ...indexes.slice(0, column)];
   });
   const open = (item) => {
     setFailed(false);
@@ -199,9 +227,14 @@ export default function ClientReviews({ quotesOnly = false, heading = "" }) {
       <div className="container-xl">
         <div className="home-section-heading reviews-heading">
           <div>
-            <div className="home-eyebrow">{hc.reviews_eyebrow || "Trader voices"}</div>
+            <div className="home-eyebrow">
+              {hc.reviews_eyebrow || "Trader voices"}
+            </div>
             <h2 className="font-display">
-              {heading || hc.reviews_heading || cfg.heading || "Real Traders. Real Experiences."}
+              {heading ||
+                hc.reviews_heading ||
+                cfg.heading ||
+                "Real Traders. Real Experiences."}
             </h2>
             <p>
               {hc.reviews_subtitle ||
@@ -223,7 +256,9 @@ export default function ClientReviews({ quotesOnly = false, heading = "" }) {
                   {[0, 1].map((copy) =>
                     half.map((index, position) => {
                       const decorative =
-                        copy > 0 || position >= list.length || index % columnCount !== column;
+                        copy > 0 ||
+                        position >= list.length ||
+                        index % columnCount !== column;
                       return (
                         <div
                           className="review-wall-item"
@@ -249,38 +284,51 @@ export default function ClientReviews({ quotesOnly = false, heading = "" }) {
       >
         <DialogContent className={isVerticalModal ? "max-w-md" : "max-w-4xl"}>
           <DialogTitle>{active?.name || "Trader"}'s review</DialogTitle>
-          <DialogDescription>{active?.role || "IndiFunded trading journey"}</DialogDescription>
+          <DialogDescription>
+            {active?.role || "IndiFunded trading journey"}
+          </DialogDescription>
           {media &&
             !failed &&
             (media.kind === "video" ? (
               <video
                 ref={videoRefCallback}
-                className={isVerticalModal ? "review-player-vertical" : "review-player"}
+                className={
+                  isVerticalModal ? "review-player-vertical" : "review-player"
+                }
                 src={media.url}
                 controls
                 autoPlay
                 loop
                 playsInline
+                preload="auto"
+                onCanPlay={(e) => safePlayMedia(e.currentTarget, false)}
                 onError={() => setFailed(true)}
               />
             ) : (
               <iframe
-                className={isVerticalModal ? "review-player-vertical" : "review-player"}
+                className={
+                  isVerticalModal ? "review-player-vertical" : "review-player"
+                }
                 src={media.url}
                 title={`${active?.name}'s video review`}
-                allow="autoplay; fullscreen; picture-in-picture"
+                allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+                referrerPolicy="strict-origin-when-cross-origin"
                 allowFullScreen
               />
             ))}
           {failed && (
-            <div role="alert" className="text-sm text-muted-foreground space-y-2 py-4">
+            <div
+              role="alert"
+              className="text-sm text-muted-foreground space-y-2 py-4"
+            >
               <p className="flex items-center gap-2">
                 <Video size={16} /> This video is unavailable right now.
               </p>
               {String(media?.url || "").startsWith("/api/media/") && (
                 <p className="text-xs text-[var(--muted-2)]">
-                  The uploaded file was not found on this server. Re-upload it in Admin → Site
-                  Settings → Review Videos or use a YouTube/Vimeo/HTTPS MP4 link.
+                  The uploaded file was not found on this server. Re-upload it
+                  in Admin → Site Settings → Review Videos or use a
+                  YouTube/Vimeo/HTTPS MP4 link.
                 </p>
               )}
             </div>

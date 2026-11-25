@@ -44,7 +44,10 @@ describe("admin review media", () => {
       ),
     ).toBe("video/mp4");
     expect(
-      resolveMediaMimeType({ name: "mobile.m4v", type: "video/x-m4v" }, "video"),
+      resolveMediaMimeType(
+        { name: "mobile.m4v", type: "video/x-m4v" },
+        "video",
+      ),
     ).toBe("video/mp4");
     expect(
       resolveMediaMimeType(
@@ -164,4 +167,3 @@ describe("admin review media", () => {
     }
   });
 });
-

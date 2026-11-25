@@ -1,11 +1,15 @@
-// Server-only: turns a trader's pasted/uploaded trading history into AI performance insights.
-import { GoogleGenAI, Type } from "@google/genai";
+// Server-only: turns a trader's pasted/uploaded trading history into AI performance insights via OpenAI.
 import {
   generateResponse,
   GatewayError,
   PaymentRequiredError,
   RateLimitError,
 } from "@lovable.dev/ai-gateway";
+import {
+  OpenAiClientError,
+  callOpenAiChat,
+  readOpenAiApiKey,
+} from "./openai-client";
 
 export const MAX_HISTORY_CHARS = 30000;
 
@@ -20,7 +24,7 @@ export type TradeInsights = {
   next_steps: { title: string; detail: string }[];
 };
 
-const schema = {
+const schema: Record<string, unknown> = {
   type: "object",
   additionalProperties: false,
   required: [
@@ -36,7 +40,7 @@ const schema = {
   properties: {
     headline: { type: "string" },
     summary: { type: "string" },
-    score: { type: "integer", minimum: 0, maximum: 100 },
+    score: { type: "integer" },
     metrics: {
       type: "array",
       items: {
@@ -56,50 +60,6 @@ const schema = {
         additionalProperties: false,
         required: ["title", "detail"],
         properties: { title: { type: "string" }, detail: { type: "string" } },
-      },
-    },
-  },
-} as const;
-
-const geminiSchema = {
-  type: Type.OBJECT,
-  required: [
-    "headline",
-    "summary",
-    "score",
-    "metrics",
-    "strengths",
-    "weaknesses",
-    "risk_flags",
-    "next_steps",
-  ],
-  properties: {
-    headline: { type: Type.STRING },
-    summary: { type: Type.STRING },
-    score: { type: Type.INTEGER },
-    metrics: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        required: ["label", "value"],
-        properties: {
-          label: { type: Type.STRING },
-          value: { type: Type.STRING },
-        },
-      },
-    },
-    strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
-    weaknesses: { type: Type.ARRAY, items: { type: Type.STRING } },
-    risk_flags: { type: Type.ARRAY, items: { type: Type.STRING } },
-    next_steps: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        required: ["title", "detail"],
-        properties: {
-          title: { type: Type.STRING },
-          detail: { type: Type.STRING },
-        },
       },
     },
   },
@@ -129,65 +89,53 @@ export async function generateTradeInsights(input: {
     : "Challenge rules: max loss 20% of account, max 3 trades per day.";
 
   const systemPrompt =
-    "You are a trading performance coach for IndiFunded, an Indian prop trading firm (NSE/BSE, Nifty, BankNifty, F&O, simulated challenge accounts in INR). Analyse the trader's history objectively. Compute what you can (win rate, average win/loss, risk-reward, largest loss, trades per day, best/worst instruments or times). Flag any rule breaches. Give 3-5 concrete, actionable next steps. Use INR (₹) and plain, encouraging language. Never promise profits or give buy/sell recommendations for specific securities. If the data is too thin, say so and keep metrics limited to what is supported.";
+    "You are a trading performance coach for IndiFunded, an Indian prop trading firm (NSE/BSE, Nifty, BankNifty, F&O, simulated challenge accounts in INR). Analyse the trader's history objectively. Compute what you can (win rate, average win/loss, risk-reward, largest loss, trades per day, best/worst instruments or times). Flag any rule breaches. Give 3-5 concrete, actionable next steps. Use INR (₹) and plain, encouraging language. Never promise profits or give buy/sell recommendations for specific securities. If the data is too thin, say so and keep metrics limited to what is supported. Score must be an integer between 0 and 100.";
   const userPrompt = `${rules}\n\nTrader notes: ${input.notes?.trim() || "none"}\n\nTrading history (CSV or free text):\n${input.history}`;
 
-  const geminiKey = String(process.env["GEMINI_API_KEY"] || "").trim();
-  const hasGemini = Boolean(geminiKey && !/^MY_/i.test(geminiKey));
+  const openAiKey = readOpenAiApiKey();
   const lovableKey = String(process.env["LOVABLE_API_KEY"] || "").trim();
 
-  if (!hasGemini && !lovableKey) {
+  if (!openAiKey && !lovableKey) {
     throw new InsightsError(
       503,
-      "AI insights are not configured yet. Add GEMINI_API_KEY in Settings > Secrets.",
+      "AI insights are not configured yet. Add OPENAI_API_KEY in Settings > Secrets.",
     );
   }
 
-  if (hasGemini) {
+  if (openAiKey) {
     try {
-      const ai = new GoogleGenAI({
-        apiKey: geminiKey,
-        httpOptions: {
-          headers: {
-            "User-Agent": "aistudio-build",
+      const rawText = await callOpenAiChat({
+        apiKey: openAiKey,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        responseFormat: {
+          type: "json_schema",
+          json_schema: {
+            name: "trade_insights",
+            strict: true,
+            schema,
           },
         },
+        temperature: 0.2,
       });
-      const response = await ai.models.generateContent({
-        model: "gemini-4-hydrogen",
-        contents: userPrompt,
-        config: {
-          systemInstruction: systemPrompt,
-          responseMimeType: "application/json",
-          responseSchema: geminiSchema,
-        },
-      });
-      const rawText = (response.text ?? "").trim();
-      if (!rawText) {
-        throw new InsightsError(
-          502,
-          "The AI could not analyse this history. Please try again.",
-        );
-      }
       const parsed = JSON.parse(rawText) as TradeInsights;
       parsed.score = Math.max(0, Math.min(100, Math.round(parsed.score)));
       return parsed;
     } catch (e) {
       if (e instanceof InsightsError) throw e;
-      const msg = e instanceof Error ? e.message : String(e || "");
-      if (/429|RESOURCE_EXHAUSTED/i.test(msg)) {
-        throw new InsightsError(
-          429,
-          "AI is busy, please try again in a minute.",
-        );
-      }
-      if (/400|API_KEY_INVALID|403|PERMISSION_DENIED/i.test(msg)) {
-        throw new InsightsError(
-          403,
-          "Gemini API key is invalid or unauthorized. Check GEMINI_API_KEY in Settings > Secrets.",
-        );
-      }
-      if (!lovableKey) {
+      if (e instanceof OpenAiClientError) {
+        if (
+          e.status === 401 ||
+          e.status === 402 ||
+          e.status === 403 ||
+          e.status === 429 ||
+          !lovableKey
+        ) {
+          throw new InsightsError(e.status, e.message);
+        }
+      } else if (!lovableKey) {
         throw new InsightsError(502, "AI analysis failed. Please try again.");
       }
     }

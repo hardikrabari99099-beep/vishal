@@ -155,7 +155,11 @@ function PlatformLiveQuoteBadge({ symbol, initialQuote, marketStatus }) {
   useEffect(() => {
     const nextLtp = Number(initialQuote?.ltp);
     if (!Number.isFinite(nextLtp) || nextLtp <= 0) return;
-    if (isLive && prevLtpRef.current !== null && prevLtpRef.current !== nextLtp) {
+    if (
+      isLive &&
+      prevLtpRef.current !== null &&
+      prevLtpRef.current !== nextLtp
+    ) {
       setTickDir(nextLtp > prevLtpRef.current ? "up" : "down");
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => setTickDir(""), 200);
@@ -340,6 +344,43 @@ export function PlatformPreview() {
   );
 }
 
+function safeLeaderboardAvatar(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^\/(?!\/)/.test(raw)) return raw;
+  if (/^data:image\/(?:png|jpe?g|webp|gif);base64,/i.test(raw)) return raw;
+  try {
+    const parsed = new URL(raw);
+    return parsed.protocol === "https:" ? parsed.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function LeaderboardAvatar({ row }) {
+  const [broken, setBroken] = useState(false);
+  const name = row?.name || row?.trader_name || "Trader";
+  const initial = String(name).trim().charAt(0).toUpperCase() || "T";
+  const src = broken ? "" : safeLeaderboardAvatar(row?.avatar_url);
+
+  return (
+    <div className="board-avatar" aria-hidden={!src ? "true" : undefined}>
+      {src ? (
+        <img
+          src={src}
+          alt={name}
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onError={() => setBroken(true)}
+        />
+      ) : (
+        <span>{initial}</span>
+      )}
+    </div>
+  );
+}
+
 /* ---------- Monthly top 10 leaderboard ---------- */
 const SAMPLE_BOARD = Array.from({ length: 10 }, (_, i) => ({
   id: `s${i}`,
@@ -412,13 +453,15 @@ export function MonthlyLeaderboard() {
               <li
                 key={r.id || i}
                 className={`board-row ${i < 3 ? `is-top is-top-${i + 1}` : ""} ${r.sample ? "is-sample" : ""}`}
+                data-testid={`home-board-row-${i}`}
               >
                 <span className="board-rank">
                   {Icon ? <Icon size={18} /> : i + 1}
                 </span>
+                <LeaderboardAvatar row={r} />
                 <div className="board-name">
                   <strong>{r.name || r.trader_name}</strong>
-                  <small>{r.trader_id || r.plan || ""}</small>
+                  <small>{r.trader_id || r.plan || r.city || ""}</small>
                 </div>
                 <div className="board-stat">
                   <small>{r.profit_pct != null ? "Return" : ""}</small>

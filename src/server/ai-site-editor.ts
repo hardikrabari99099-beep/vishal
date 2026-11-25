@@ -1,5 +1,9 @@
-// Server-only: Gemini-powered A-to-Z Site Editor for IndiFunded Admin.
-import { GoogleGenAI, ThinkingLevel, Type } from "@google/genai";
+// Server-only: OpenAI-powered A-to-Z Site Editor for IndiFunded Admin.
+import {
+  OpenAiClientError,
+  callOpenAiChat,
+  readOpenAiApiKey,
+} from "./openai-client";
 
 export class AiEditorError extends Error {
   constructor(
@@ -25,157 +29,78 @@ export type AiSiteEditPlan = {
   coupon_actions: CollectionAction[];
 };
 
-import fs from "node:fs";
-import path from "node:path";
+const actionItemSchema = (dataDescription: string) => ({
+  type: "object",
+  additionalProperties: false,
+  required: ["action", "id", "data_json"],
+  properties: {
+    action: {
+      type: "string",
+      enum: ["create", "update", "delete"],
+      description: "One of: create, update, delete",
+    },
+    id: {
+      type: ["string", "null"],
+      description: "Existing item id for update or delete, or null for create",
+    },
+    data_json: {
+      type: "string",
+      description: dataDescription,
+    },
+  },
+});
 
-let cachedApiKey = "";
-let cachedClient: GoogleGenAI | null = null;
-
-function readEnvGeminiKey(): string {
-  const direct = String(process.env["GEMINI_API_KEY"] || "").trim();
-  if (direct && !/^MY_/i.test(direct)) return direct;
-  if (!process.env["VITEST"]) {
-    for (const fileName of [".env", ".env.local"]) {
-      try {
-        const p = path.resolve(process.cwd(), fileName);
-        if (!fs.existsSync(p)) continue;
-        const raw = fs.readFileSync(p, "utf8");
-        for (const line of raw.split(/\r?\n/)) {
-          const trimmed = line.trim();
-          if (!trimmed || trimmed.startsWith("#")) continue;
-          const eq = trimmed.indexOf("=");
-          if (eq <= 0) continue;
-          const k = trimmed.slice(0, eq).trim();
-          if (k !== "GEMINI_API_KEY") continue;
-          let v = trimmed.slice(eq + 1).trim();
-          if (
-            (v.startsWith('"') && v.endsWith('"')) ||
-            (v.startsWith("'") && v.endsWith("'"))
-          ) {
-            v = v.slice(1, -1).trim();
-          }
-          if (v && !/^MY_/i.test(v)) return v;
-        }
-      } catch {
-        // ignore unreadable env file
-      }
-    }
-  }
-  return "";
-}
-
-function getGeminiClient(): GoogleGenAI {
-  const apiKey = readEnvGeminiKey();
-  if (!apiKey) {
-    throw new AiEditorError(
-      503,
-      "GEMINI_API_KEY is not configured. Add it in Settings > Secrets to use the AI Site Editor.",
-    );
-  }
-  if (!cachedClient || cachedApiKey !== apiKey) {
-    cachedClient = new GoogleGenAI({
-      apiKey,
-      httpOptions: {
-        headers: {
-          "User-Agent": "aistudio-build",
-        },
-      },
-    });
-    cachedApiKey = apiKey;
-  }
-  return cachedClient;
-}
-
-const responseSchema = {
-  type: Type.OBJECT,
-  required: ["reply", "summary_bullets", "settings_patch_json"],
+const responseSchema: Record<string, unknown> = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "reply",
+    "summary_bullets",
+    "settings_patch_json",
+    "plan_actions",
+    "blog_actions",
+    "coupon_actions",
+  ],
   properties: {
     reply: {
-      type: Type.STRING,
+      type: "string",
       description:
         "Clear, concise message explaining every edit prepared for the admin (max 2-3 sentences).",
     },
     summary_bullets: {
-      type: Type.ARRAY,
-      items: { type: Type.STRING },
+      type: "array",
+      items: { type: "string" },
       description:
         "Exact bullet list of every change made across settings, plans, blogs, or coupons.",
     },
     settings_patch_json: {
-      type: Type.STRING,
+      type: "string",
       description:
         "Strict JSON string representing a partial deep-merge patch for site_settings. Return '{}' if only plans/blogs/coupons are changing.",
     },
     plan_actions: {
-      type: Type.ARRAY,
+      type: "array",
       description:
-        "Optional create/update/delete operations on challenge plans.",
-      items: {
-        type: Type.OBJECT,
-        required: ["action", "data_json"],
-        properties: {
-          action: {
-            type: Type.STRING,
-            description: "One of: create, update, delete",
-          },
-          id: {
-            type: Type.STRING,
-            description: "Existing plan id for update or delete",
-          },
-          data_json: {
-            type: Type.STRING,
-            description:
-              "JSON string with plan fields (name, account_size, challenge_fee, original_price, profit_target_points, profit_share, max_loss_limit, min_trading_days, total_trading_days, trades_per_day, description, features[], popular, order).",
-          },
-        },
-      },
+        "Optional create/update/delete operations on challenge plans. Return [] if none.",
+      items: actionItemSchema(
+        "JSON string with plan fields (name, account_size, challenge_fee, original_price, profit_target_points, profit_share, max_loss_limit, min_trading_days, total_trading_days, trades_per_day, description, features[], popular, order).",
+      ),
     },
     blog_actions: {
-      type: Type.ARRAY,
-      description: "Optional create/update/delete operations on blog posts.",
-      items: {
-        type: Type.OBJECT,
-        required: ["action", "data_json"],
-        properties: {
-          action: {
-            type: Type.STRING,
-            description: "One of: create, update, delete",
-          },
-          id: {
-            type: Type.STRING,
-            description: "Existing blog id for update or delete",
-          },
-          data_json: {
-            type: Type.STRING,
-            description:
-              "JSON string with blog fields (title, slug, excerpt, content, author, published).",
-          },
-        },
-      },
+      type: "array",
+      description:
+        "Optional create/update/delete operations on blog posts. Return [] if none.",
+      items: actionItemSchema(
+        "JSON string with blog fields (title, slug, excerpt, content, author, published).",
+      ),
     },
     coupon_actions: {
-      type: Type.ARRAY,
+      type: "array",
       description:
-        "Optional create/update/delete operations on discount coupon codes.",
-      items: {
-        type: Type.OBJECT,
-        required: ["action", "data_json"],
-        properties: {
-          action: {
-            type: Type.STRING,
-            description: "One of: create, update, delete",
-          },
-          id: {
-            type: Type.STRING,
-            description: "Existing coupon id for update or delete",
-          },
-          data_json: {
-            type: Type.STRING,
-            description:
-              "JSON string with coupon fields (code, discount_percent, active, description, max_uses).",
-          },
-        },
-      },
+        "Optional create/update/delete operations on discount coupon codes. Return [] if none.",
+      items: actionItemSchema(
+        "JSON string with coupon fields (code, discount_percent, active, description, max_uses).",
+      ),
     },
   },
 };
@@ -291,7 +216,13 @@ export async function generateAiSiteEdit(input: {
     throw new AiEditorError(400, "Prompt is too long (max 8,000 characters).");
   }
 
-  const ai = getGeminiClient();
+  const apiKey = readOpenAiApiKey();
+  if (!apiKey) {
+    throw new AiEditorError(
+      503,
+      "OPENAI_API_KEY is not configured. Add it in Settings > Secrets to use the AI Site Editor.",
+    );
+  }
 
   const compactBlogs = input.blogs.map((b) => ({
     id: b["id"],
@@ -352,40 +283,24 @@ ${JSON.stringify(contextSnapshot)}
 Admin instruction:
 ${userPrompt}`;
 
-  const invokeModel = () =>
-    ai.models.generateContent({
-      model: "gemini-4-hydrogen",
-      contents,
-      config: {
-        systemInstruction,
-        responseMimeType: "application/json",
-        responseSchema,
-        thinkingConfig: { thinkingLevel: ThinkingLevel.MEDIUM },
-      },
-    });
-
   try {
-    let response;
-    try {
-      response = await invokeModel();
-    } catch (firstErr: unknown) {
-      const firstMsg =
-        firstErr instanceof Error ? firstErr.message : String(firstErr || "");
-      if (/503|UNAVAILABLE|high demand/i.test(firstMsg)) {
-        await new Promise((r) => setTimeout(r, 1200));
-        response = await invokeModel();
-      } else {
-        throw firstErr;
-      }
-    }
-
-    const rawText = (response.text ?? "").trim();
-    if (!rawText) {
-      throw new AiEditorError(
-        502,
-        "Gemini returned an empty response. Please try again.",
-      );
-    }
+    const rawText = await callOpenAiChat({
+      apiKey,
+      messages: [
+        { role: "system", content: systemInstruction },
+        { role: "user", content: contents },
+      ],
+      responseFormat: {
+        type: "json_schema",
+        json_schema: {
+          name: "site_edit_plan",
+          strict: true,
+          schema: responseSchema,
+        },
+      },
+      temperature: 0.2,
+      timeoutMs: 60000,
+    });
 
     const parsed = JSON.parse(rawText) as {
       reply?: string;
@@ -393,17 +308,17 @@ ${userPrompt}`;
       settings_patch_json?: string;
       plan_actions?: Array<{
         action?: string;
-        id?: string;
+        id?: string | null;
         data_json?: string;
       }>;
       blog_actions?: Array<{
         action?: string;
-        id?: string;
+        id?: string | null;
         data_json?: string;
       }>;
       coupon_actions?: Array<{
         action?: string;
-        id?: string;
+        id?: string | null;
         data_json?: string;
       }>;
     };
@@ -417,7 +332,8 @@ ${userPrompt}`;
 
     const normalizeActions = (
       arr:
-        Array<{ action?: string; id?: string; data_json?: string }> | undefined,
+        | Array<{ action?: string; id?: string | null; data_json?: string }>
+        | undefined,
     ): CollectionAction[] =>
       (arr || [])
         .filter(
@@ -441,31 +357,10 @@ ${userPrompt}`;
     };
   } catch (err: unknown) {
     if (err instanceof AiEditorError) throw err;
+    if (err instanceof OpenAiClientError) {
+      throw new AiEditorError(err.status, err.message);
+    }
     const msg = err instanceof Error ? err.message : String(err || "");
-    if (/403|PERMISSION_DENIED/i.test(msg)) {
-      throw new AiEditorError(
-        403,
-        "Gemini API permission denied. Check GEMINI_API_KEY in Secrets.",
-      );
-    }
-    if (/400|API_KEY_INVALID/i.test(msg)) {
-      throw new AiEditorError(
-        400,
-        "Invalid GEMINI_API_KEY. Please check Settings > Secrets.",
-      );
-    }
-    if (/429|RESOURCE_EXHAUSTED/i.test(msg)) {
-      throw new AiEditorError(
-        429,
-        "Gemini rate limit reached. Please wait a moment and retry.",
-      );
-    }
-    if (/503|UNAVAILABLE|high demand/i.test(msg)) {
-      throw new AiEditorError(
-        503,
-        "Gemini service is temporarily busy. Please wait a few seconds and click Generate again.",
-      );
-    }
     throw new AiEditorError(
       502,
       `AI Site Editor failed: ${msg || "unexpected upstream error"}`,

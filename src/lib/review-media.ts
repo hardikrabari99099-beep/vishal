@@ -1,7 +1,7 @@
 export type ReviewMedia = { kind: "video" | "youtube" | "vimeo"; url: string };
 
 const LOCAL_MEDIA_RE =
-  /^\/api\/media\/[\w-]+(?:\.(?:mp4|webm|mov))?(?:\?[\w=&-]+)?$/i;
+  /^\/api\/media\/[\w-]+(?:\.(?:mp4|m4v|webm|mov))?(?:\?[\w=&-]+)?$/i;
 
 export function getReviewMedia(value: string): ReviewMedia | null {
   const raw = String(value || "").trim();
@@ -38,7 +38,7 @@ export function getReviewMedia(value: string): ReviewMedia | null {
           }
         : null;
     }
-    if (/\.(mp4|webm|mov)$/i.test(url.pathname))
+    if (/\.(mp4|m4v|webm|mov)$/i.test(url.pathname))
       return { kind: "video", url: url.href };
     return null;
   } catch {
@@ -50,7 +50,7 @@ export function getReviewPreviewUrl(media: ReviewMedia): string {
   if (media.kind === "youtube") {
     const id = media.url.match(/embed\/([\w-]{11})/)?.[1];
     if (id) {
-      return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&controls=0&playsinline=1&rel=0`;
+      return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}&controls=0&playsinline=1&rel=0&enablejsapi=1`;
     }
   }
   if (media.kind === "vimeo") {

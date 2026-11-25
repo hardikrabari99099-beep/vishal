@@ -164,7 +164,9 @@ export function AdminDashboard() {
       if (summary.connected) {
         toast.success(`Connected Google Cloud Database (${summary.email})`);
       } else {
-        toast.info("Sign in with growthloopp@gmail.com to enable Cloud Database sync.");
+        toast.info(
+          "Sign in with growthloopp@gmail.com to enable Cloud Database sync.",
+        );
       }
     } catch (err) {
       toast.error(err?.message || "Could not connect Google account");
@@ -177,14 +179,22 @@ export function AdminDashboard() {
     setCloudBusy("sync");
     try {
       const { data } = await api.get("/admin/database/export");
-      const result = await syncCollectionsToFirestore(data?.collections || {}, data?.siteConfig);
+      const result = await syncCollectionsToFirestore(
+        data?.collections || {},
+        data?.siteConfig,
+      );
       const summary = await fetchCloudDatabaseSummary();
       setCloudInfo(summary);
       toast.success(
         `Backed up ${result.syncedCount} database records to your Google Cloud Firestore`,
       );
     } catch (err) {
-      toast.error(formatApiError(err?.response?.data?.detail, err?.message || "Cloud sync failed"));
+      toast.error(
+        formatApiError(
+          err?.response?.data?.detail,
+          err?.message || "Cloud sync failed",
+        ),
+      );
     } finally {
       setCloudBusy("");
     }
@@ -202,7 +212,10 @@ export function AdminDashboard() {
       );
     } catch (err) {
       toast.error(
-        formatApiError(err?.response?.data?.detail, err?.message || "Cloud restore failed"),
+        formatApiError(
+          err?.response?.data?.detail,
+          err?.message || "Cloud restore failed",
+        ),
       );
     } finally {
       setCloudBusy("");
@@ -231,34 +244,49 @@ export function AdminDashboard() {
               Action needed
             </div>
             <div className="font-display text-xl mt-1">
-              {s.pending_orders} pending payment{s.pending_orders > 1 ? "s" : ""} to verify
+              {s.pending_orders} pending payment
+              {s.pending_orders > 1 ? "s" : ""} to verify
             </div>
           </div>
-          <a href="/admin/orders" className="btn-amber rounded-full px-5 py-2.5 text-sm">
+          <a
+            href="/admin/orders"
+            className="btn-amber rounded-full px-5 py-2.5 text-sm"
+          >
             Review →
           </a>
         </div>
       )}
       <div className="grid md:grid-cols-4 gap-4 mt-10">
         {items.map((it) => (
-          <div key={it.k} className="card-panel p-6" data-testid={`stat-${it.k}`}>
+          <div
+            key={it.k}
+            className="card-panel p-6"
+            data-testid={`stat-${it.k}`}
+          >
             <div className="flex items-center justify-between">
               <div className="text-xs uppercase tracking-wider text-[var(--muted-2)] font-mono">
                 {it.label}
               </div>
               <div className="text-[var(--accent)]">{it.icon}</div>
             </div>
-            <div className="font-display text-4xl mt-5">{s ? s[it.k] : "—"}</div>
+            <div className="font-display text-4xl mt-5">
+              {s ? s[it.k] : "—"}
+            </div>
           </div>
         ))}
-        <div className="card-panel p-6 md:col-span-4 glow-border" data-testid="stat-revenue">
+        <div
+          className="card-panel p-6 md:col-span-4 glow-border"
+          data-testid="stat-revenue"
+        >
           <div className="flex items-center justify-between">
             <div className="text-xs uppercase tracking-wider text-[var(--muted-2)] font-mono">
               Total Revenue
             </div>
             <IndianRupee className="text-[var(--accent)]" />
           </div>
-          <div className="font-display text-5xl mt-5">{s ? formatINR(s.revenue) : "—"}</div>
+          <div className="font-display text-5xl mt-5">
+            {s ? formatINR(s.revenue) : "—"}
+          </div>
         </div>
       </div>
 
@@ -394,7 +422,10 @@ export function AdminPlans() {
       broadcastSync("plans");
       load();
     } catch (e) {
-      toast.error(formatApiError(e.response?.data?.detail, "Could not delete plan") || e.message);
+      toast.error(
+        formatApiError(e.response?.data?.detail, "Could not delete plan") ||
+          e.message,
+      );
     }
   };
 
@@ -437,12 +468,20 @@ export function AdminPlans() {
                 <TableCell>{p.popular ? "★" : ""}</TableCell>
                 <TableCell className="text-right">
                   <button
-                    onClick={() => setEditing({ ...p, features: (p.features || []).join("\n") })}
+                    onClick={() =>
+                      setEditing({
+                        ...p,
+                        features: (p.features || []).join("\n"),
+                      })
+                    }
                     className="btn-ghost px-3 py-1.5 rounded-md mr-2 inline-flex items-center gap-1"
                   >
                     <Pencil size={14} />
                   </button>
-                  <ConfirmDeleteButton onDelete={() => del(p.id)} ariaLabel={`Delete ${p.name}`} />
+                  <ConfirmDeleteButton
+                    onDelete={() => del(p.id)}
+                    ariaLabel={`Delete ${p.name}`}
+                  />
                 </TableCell>
               </TableRow>
             ))}
@@ -464,7 +503,9 @@ export function AdminPlans() {
                   <Label>Name</Label>
                   <Input
                     value={editing.name}
-                    onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+                    onChange={(e) =>
+                      setEditing({ ...editing, name: e.target.value })
+                    }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                   />
                 </div>
@@ -473,7 +514,9 @@ export function AdminPlans() {
                   <Input
                     type="number"
                     value={editing.order}
-                    onChange={(e) => setEditing({ ...editing, order: +e.target.value })}
+                    onChange={(e) =>
+                      setEditing({ ...editing, order: +e.target.value })
+                    }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                   />
                 </div>
@@ -482,7 +525,9 @@ export function AdminPlans() {
                   <Input
                     type="number"
                     value={editing.account_size}
-                    onChange={(e) => setEditing({ ...editing, account_size: +e.target.value })}
+                    onChange={(e) =>
+                      setEditing({ ...editing, account_size: +e.target.value })
+                    }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                   />
                 </div>
@@ -492,7 +537,9 @@ export function AdminPlans() {
                     type="number"
                     step="0.01"
                     value={editing.challenge_fee}
-                    onChange={(e) => setEditing({ ...editing, challenge_fee: +e.target.value })}
+                    onChange={(e) =>
+                      setEditing({ ...editing, challenge_fee: +e.target.value })
+                    }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                   />
                 </div>
@@ -501,7 +548,9 @@ export function AdminPlans() {
                   <Input
                     type="number"
                     value={editing.profit_share}
-                    onChange={(e) => setEditing({ ...editing, profit_share: +e.target.value })}
+                    onChange={(e) =>
+                      setEditing({ ...editing, profit_share: +e.target.value })
+                    }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                   />
                 </div>
@@ -510,7 +559,12 @@ export function AdminPlans() {
                   <Input
                     type="number"
                     value={editing.max_loss_limit}
-                    onChange={(e) => setEditing({ ...editing, max_loss_limit: +e.target.value })}
+                    onChange={(e) =>
+                      setEditing({
+                        ...editing,
+                        max_loss_limit: +e.target.value,
+                      })
+                    }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                   />
                 </div>
@@ -519,7 +573,12 @@ export function AdminPlans() {
                   <Input
                     type="number"
                     value={editing.min_trading_days}
-                    onChange={(e) => setEditing({ ...editing, min_trading_days: +e.target.value })}
+                    onChange={(e) =>
+                      setEditing({
+                        ...editing,
+                        min_trading_days: +e.target.value,
+                      })
+                    }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                   />
                 </div>
@@ -529,7 +588,10 @@ export function AdminPlans() {
                     type="number"
                     value={editing.total_trading_days}
                     onChange={(e) =>
-                      setEditing({ ...editing, total_trading_days: +e.target.value })
+                      setEditing({
+                        ...editing,
+                        total_trading_days: +e.target.value,
+                      })
                     }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                   />
@@ -540,7 +602,10 @@ export function AdminPlans() {
                     type="number"
                     value={editing.profit_target_points}
                     onChange={(e) =>
-                      setEditing({ ...editing, profit_target_points: +e.target.value })
+                      setEditing({
+                        ...editing,
+                        profit_target_points: +e.target.value,
+                      })
                     }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                   />
@@ -550,7 +615,12 @@ export function AdminPlans() {
                   <Input
                     type="number"
                     value={editing.trades_per_day}
-                    onChange={(e) => setEditing({ ...editing, trades_per_day: +e.target.value })}
+                    onChange={(e) =>
+                      setEditing({
+                        ...editing,
+                        trades_per_day: +e.target.value,
+                      })
+                    }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                   />
                 </div>
@@ -559,7 +629,9 @@ export function AdminPlans() {
                 <Label>Description</Label>
                 <Textarea
                   value={editing.description}
-                  onChange={(e) => setEditing({ ...editing, description: e.target.value })}
+                  onChange={(e) =>
+                    setEditing({ ...editing, description: e.target.value })
+                  }
                   className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                 />
               </div>
@@ -568,7 +640,9 @@ export function AdminPlans() {
                 <Textarea
                   rows={5}
                   value={editing.features}
-                  onChange={(e) => setEditing({ ...editing, features: e.target.value })}
+                  onChange={(e) =>
+                    setEditing({ ...editing, features: e.target.value })
+                  }
                   className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                 />
               </div>
@@ -576,7 +650,9 @@ export function AdminPlans() {
                 <input
                   type="checkbox"
                   checked={editing.popular}
-                  onChange={(e) => setEditing({ ...editing, popular: e.target.checked })}
+                  onChange={(e) =>
+                    setEditing({ ...editing, popular: e.target.checked })
+                  }
                 />{" "}
                 Most Popular
               </label>
@@ -640,7 +716,10 @@ export function AdminBlogs() {
       broadcastSync("blogs");
       load();
     } catch (e) {
-      toast.error(formatApiError(e.response?.data?.detail, "Could not delete post") || e.message);
+      toast.error(
+        formatApiError(e.response?.data?.detail, "Could not delete post") ||
+          e.message,
+      );
     }
   };
   return (
@@ -676,7 +755,9 @@ export function AdminBlogs() {
                 data-testid={`blog-row-${b.id}`}
               >
                 <TableCell className="font-display">{b.title}</TableCell>
-                <TableCell className="font-mono text-xs text-[var(--muted)]">{b.slug}</TableCell>
+                <TableCell className="font-mono text-xs text-[var(--muted)]">
+                  {b.slug}
+                </TableCell>
                 <TableCell>{b.published ? "✓" : "—"}</TableCell>
                 <TableCell className="text-right">
                   <button
@@ -685,7 +766,10 @@ export function AdminBlogs() {
                   >
                     <Pencil size={14} />
                   </button>
-                  <ConfirmDeleteButton onDelete={() => del(b.id)} ariaLabel={`Delete ${b.title}`} />
+                  <ConfirmDeleteButton
+                    onDelete={() => del(b.id)}
+                    ariaLabel={`Delete ${b.title}`}
+                  />
                 </TableCell>
               </TableRow>
             ))}
@@ -706,7 +790,9 @@ export function AdminBlogs() {
                 <Label>Title</Label>
                 <Input
                   value={editing.title}
-                  onChange={(e) => setEditing({ ...editing, title: e.target.value })}
+                  onChange={(e) =>
+                    setEditing({ ...editing, title: e.target.value })
+                  }
                   className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                 />
               </div>
@@ -714,7 +800,9 @@ export function AdminBlogs() {
                 <Label>Slug</Label>
                 <Input
                   value={editing.slug}
-                  onChange={(e) => setEditing({ ...editing, slug: e.target.value })}
+                  onChange={(e) =>
+                    setEditing({ ...editing, slug: e.target.value })
+                  }
                   className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                 />
               </div>
@@ -722,7 +810,9 @@ export function AdminBlogs() {
                 <Label>Cover Image URL</Label>
                 <Input
                   value={editing.cover_image}
-                  onChange={(e) => setEditing({ ...editing, cover_image: e.target.value })}
+                  onChange={(e) =>
+                    setEditing({ ...editing, cover_image: e.target.value })
+                  }
                   className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                 />
               </div>
@@ -730,7 +820,9 @@ export function AdminBlogs() {
                 <Label>Author</Label>
                 <Input
                   value={editing.author}
-                  onChange={(e) => setEditing({ ...editing, author: e.target.value })}
+                  onChange={(e) =>
+                    setEditing({ ...editing, author: e.target.value })
+                  }
                   className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                 />
               </div>
@@ -739,7 +831,9 @@ export function AdminBlogs() {
                 <Textarea
                   rows={2}
                   value={editing.excerpt}
-                  onChange={(e) => setEditing({ ...editing, excerpt: e.target.value })}
+                  onChange={(e) =>
+                    setEditing({ ...editing, excerpt: e.target.value })
+                  }
                   className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                 />
               </div>
@@ -748,7 +842,9 @@ export function AdminBlogs() {
                 <Textarea
                   rows={10}
                   value={editing.content}
-                  onChange={(e) => setEditing({ ...editing, content: e.target.value })}
+                  onChange={(e) =>
+                    setEditing({ ...editing, content: e.target.value })
+                  }
                   className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                 />
               </div>
@@ -756,7 +852,9 @@ export function AdminBlogs() {
                 <input
                   type="checkbox"
                   checked={editing.published}
-                  onChange={(e) => setEditing({ ...editing, published: e.target.checked })}
+                  onChange={(e) =>
+                    setEditing({ ...editing, published: e.target.checked })
+                  }
                 />{" "}
                 Published
               </label>
@@ -789,7 +887,9 @@ export function AdminLeads() {
       toast.success("Deleted");
       load();
     } catch (e) {
-      toast.error(formatApiError(e.response?.data?.detail, "Could not delete lead"));
+      toast.error(
+        formatApiError(e.response?.data?.detail, "Could not delete lead"),
+      );
     }
   };
   return (
@@ -827,7 +927,10 @@ export function AdminLeads() {
                   {new Date(l.created_at).toLocaleDateString()}
                 </TableCell>
                 <TableCell className="text-right">
-                  <ConfirmDeleteButton onDelete={() => del(l.id)} ariaLabel="Delete lead" />
+                  <ConfirmDeleteButton
+                    onDelete={() => del(l.id)}
+                    ariaLabel="Delete lead"
+                  />
                 </TableCell>
               </TableRow>
             ))}
@@ -893,7 +996,8 @@ export function AdminCertificates() {
       .get("/admin/certificate-template")
       .then((r) => {
         if (r.data?.design_url) setDesignUrl(r.data.design_url);
-        if (r.data?.layout) setLayout((prev) => ({ ...prev, ...r.data.layout }));
+        if (r.data?.layout)
+          setLayout((prev) => ({ ...prev, ...r.data.layout }));
       })
       .catch(() => {});
   }, []);
@@ -905,9 +1009,15 @@ export function AdminCertificates() {
         design_url: nextDesign,
         layout: nextLayout,
       });
-      toast.success(nextDesign ? "Certificate design saved" : "Reverted to default template");
+      toast.success(
+        nextDesign
+          ? "Certificate design saved"
+          : "Reverted to default template",
+      );
     } catch (e) {
-      toast.error(formatApiError(e.response?.data?.detail) || "Could not save design");
+      toast.error(
+        formatApiError(e.response?.data?.detail) || "Could not save design",
+      );
     } finally {
       setSavingTemplate(false);
     }
@@ -938,7 +1048,10 @@ export function AdminCertificates() {
   useEffect(() => {
     if (!editing || studioMode !== "auto") return;
     const seq = ++genSeqRef.current;
-    const code = editing.certificate_code || editing.payout_id || generateCertificateCode();
+    const code =
+      editing.certificate_code ||
+      editing.payout_id ||
+      generateCertificateCode();
     const verifyUrl = buildVerificationUrl(code);
     setGenerating(true);
     const timer = setTimeout(async () => {
@@ -1038,7 +1151,9 @@ export function AdminCertificates() {
         });
         finalImageUrl = rendered.imageDataUrl;
         // Persist latest layout tweaks alongside template
-        api.put("/admin/certificate-template", { design_url: designUrl, layout }).catch(() => {});
+        api
+          .put("/admin/certificate-template", { design_url: designUrl, layout })
+          .catch(() => {});
       }
 
       if (!finalImageUrl) {
@@ -1103,7 +1218,9 @@ export function AdminCertificates() {
       }));
       toast.success("AI extracted details — please review");
     } catch (e) {
-      toast.error(formatApiError(e.response?.data?.detail) || "AI analysis failed");
+      toast.error(
+        formatApiError(e.response?.data?.detail) || "AI analysis failed",
+      );
     } finally {
       setAnalyzing(false);
     }
@@ -1141,8 +1258,9 @@ export function AdminCertificates() {
           <div className="chip mb-3">Last Week Payouts · QR Verification</div>
           <h1 className="font-display text-4xl">Payout Certificates</h1>
           <p className="text-sm text-[var(--muted)] mt-2 max-w-2xl">
-            Upload your certificate design once. Enter trader name, payout amount and date to
-            automatically stamp a scannable verification QR code and generate the certificate.
+            Upload your certificate design once. Enter trader name, payout
+            amount and date to automatically stamp a scannable verification QR
+            code and generate the certificate.
           </p>
         </div>
         <button
@@ -1169,7 +1287,9 @@ export function AdminCertificates() {
             </div>
           )}
           <div>
-            <div className="font-display text-base">Master Certificate Design</div>
+            <div className="font-display text-base">
+              Master Certificate Design
+            </div>
             <div className="text-xs text-[var(--muted)] mt-0.5">
               {designUrl
                 ? "Custom design active — automatically applied to every generated certificate."
@@ -1183,8 +1303,17 @@ export function AdminCertificates() {
             data-testid="cert-template-upload-btn"
           >
             <Upload size={14} />
-            {savingTemplate ? "Saving…" : designUrl ? "Change Design" : "Upload Design"}
-            <input type="file" accept="image/*" onChange={onUploadDesign} className="hidden" />
+            {savingTemplate
+              ? "Saving…"
+              : designUrl
+                ? "Change Design"
+                : "Upload Design"}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={onUploadDesign}
+              className="hidden"
+            />
           </label>
           {designUrl && (
             <button
@@ -1232,10 +1361,14 @@ export function AdminCertificates() {
                 <TableCell className="font-mono text-xs">
                   <div className="text-white">{c.certificate_code || "—"}</div>
                   {c.payout_id && (
-                    <div className="text-[11px] text-[var(--muted-2)] mt-0.5">{c.payout_id}</div>
+                    <div className="text-[11px] text-[var(--muted-2)] mt-0.5">
+                      {c.payout_id}
+                    </div>
                   )}
                 </TableCell>
-                <TableCell className="font-display">{c.trader_name || "—"}</TableCell>
+                <TableCell className="font-display">
+                  {c.trader_name || "—"}
+                </TableCell>
                 <TableCell>{c.plan || "—"}</TableCell>
                 <TableCell className="text-[var(--accent)] font-mono">
                   {c.amount ? formatINR(c.amount) : "—"}
@@ -1305,7 +1438,9 @@ export function AdminCertificates() {
           <DialogHeader>
             <div className="flex flex-wrap items-center justify-between gap-3 pr-6">
               <DialogTitle className="font-display text-2xl">
-                {editing?.id ? "Edit Payout Certificate" : "Auto-Generate QR Payout Certificate"}
+                {editing?.id
+                  ? "Edit Payout Certificate"
+                  : "Auto-Generate QR Payout Certificate"}
               </DialogTitle>
               <div className="flex items-center gap-1 p-1 rounded-lg bg-white/[0.05] border border-[var(--border)]">
                 <button
@@ -1363,8 +1498,14 @@ export function AdminCertificates() {
                         className="btn-amber rounded-full px-4 py-2 text-sm inline-flex items-center gap-2 cursor-pointer"
                         data-testid="cert-upload-btn"
                       >
-                        <Upload size={14} /> {uploading ? "Loading…" : "Upload from device"}
-                        <input type="file" accept="image/*" onChange={onFile} className="hidden" />
+                        <Upload size={14} />{" "}
+                        {uploading ? "Loading…" : "Upload from device"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={onFile}
+                          className="hidden"
+                        />
                       </label>
                       {editing.image_url?.startsWith("data:image/") && (
                         <button
@@ -1384,8 +1525,14 @@ export function AdminCertificates() {
                       )}
                     </div>
                     <Input
-                      value={editing.image_url?.startsWith("data:") ? "" : editing.image_url}
-                      onChange={(e) => setEditing({ ...editing, image_url: e.target.value })}
+                      value={
+                        editing.image_url?.startsWith("data:")
+                          ? ""
+                          : editing.image_url
+                      }
+                      onChange={(e) =>
+                        setEditing({ ...editing, image_url: e.target.value })
+                      }
                       className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                       placeholder="https://… or /certificates/cert-1.png"
                     />
@@ -1397,7 +1544,9 @@ export function AdminCertificates() {
                     <Label>Trader Name</Label>
                     <Input
                       value={editing.trader_name}
-                      onChange={(e) => setEditing({ ...editing, trader_name: e.target.value })}
+                      onChange={(e) =>
+                        setEditing({ ...editing, trader_name: e.target.value })
+                      }
                       placeholder="e.g. Aarav Sharma"
                       className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-1.5"
                       data-testid="cert-trader-name-input"
@@ -1409,7 +1558,9 @@ export function AdminCertificates() {
                       type="number"
                       step="0.01"
                       value={editing.amount}
-                      onChange={(e) => setEditing({ ...editing, amount: +e.target.value })}
+                      onChange={(e) =>
+                        setEditing({ ...editing, amount: +e.target.value })
+                      }
                       className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-1.5"
                       data-testid="cert-amount-input"
                     />
@@ -1418,7 +1569,9 @@ export function AdminCertificates() {
                     <Label>Plan (Starter/Pro/Elite)</Label>
                     <Input
                       value={editing.plan}
-                      onChange={(e) => setEditing({ ...editing, plan: e.target.value })}
+                      onChange={(e) =>
+                        setEditing({ ...editing, plan: e.target.value })
+                      }
                       className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-1.5"
                     />
                   </div>
@@ -1427,7 +1580,12 @@ export function AdminCertificates() {
                     <Input
                       type="number"
                       value={editing.account_size}
-                      onChange={(e) => setEditing({ ...editing, account_size: +e.target.value })}
+                      onChange={(e) =>
+                        setEditing({
+                          ...editing,
+                          account_size: +e.target.value,
+                        })
+                      }
                       className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-1.5"
                     />
                   </div>
@@ -1435,7 +1593,9 @@ export function AdminCertificates() {
                     <Label>Payout Date (DD/MM/YYYY)</Label>
                     <Input
                       value={editing.payout_date}
-                      onChange={(e) => setEditing({ ...editing, payout_date: e.target.value })}
+                      onChange={(e) =>
+                        setEditing({ ...editing, payout_date: e.target.value })
+                      }
                       className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-1.5"
                     />
                   </div>
@@ -1444,7 +1604,10 @@ export function AdminCertificates() {
                     <Input
                       value={editing.payout_id || ""}
                       onChange={(e) =>
-                        setEditing({ ...editing, payout_id: e.target.value.toUpperCase() })
+                        setEditing({
+                          ...editing,
+                          payout_id: e.target.value.toUpperCase(),
+                        })
                       }
                       placeholder="e.g. PO-1042"
                       className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-1.5 font-mono"
@@ -1467,7 +1630,10 @@ export function AdminCertificates() {
                       <button
                         type="button"
                         onClick={() =>
-                          setEditing({ ...editing, certificate_code: generateCertificateCode() })
+                          setEditing({
+                            ...editing,
+                            certificate_code: generateCertificateCode(),
+                          })
                         }
                         className="px-2.5 rounded-md border border-[var(--border-hi)] hover:bg-white/5"
                         title="Generate new QR code ID"
@@ -1484,7 +1650,9 @@ export function AdminCertificates() {
                       onChange={(e) =>
                         setEditing({
                           ...editing,
-                          utr_last4: e.target.value.replace(/[^0-9a-z]/gi, "").slice(0, 4),
+                          utr_last4: e.target.value
+                            .replace(/[^0-9a-z]/gi, "")
+                            .slice(0, 4),
                         })
                       }
                       placeholder="1234"
@@ -1501,7 +1669,10 @@ export function AdminCertificates() {
                         <button
                           type="button"
                           onClick={() =>
-                            setLayout((l) => ({ ...l, overlayMode: "details_and_qr" }))
+                            setLayout((l) => ({
+                              ...l,
+                              overlayMode: "details_and_qr",
+                            }))
                           }
                           className={`px-2.5 py-1 rounded text-[11px] ${
                             layout.overlayMode !== "qr_only"
@@ -1513,7 +1684,9 @@ export function AdminCertificates() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => setLayout((l) => ({ ...l, overlayMode: "qr_only" }))}
+                          onClick={() =>
+                            setLayout((l) => ({ ...l, overlayMode: "qr_only" }))
+                          }
                           className={`px-2.5 py-1 rounded text-[11px] ${
                             layout.overlayMode === "qr_only"
                               ? "bg-[var(--accent)] text-black font-medium"
@@ -1530,7 +1703,12 @@ export function AdminCertificates() {
                         <span className="text-[var(--muted-2)]">QR Corner</span>
                         <select
                           value={layout.qrCorner}
-                          onChange={(e) => setLayout((l) => ({ ...l, qrCorner: e.target.value }))}
+                          onChange={(e) =>
+                            setLayout((l) => ({
+                              ...l,
+                              qrCorner: e.target.value,
+                            }))
+                          }
                           className="w-full mt-1 rounded-md bg-[var(--bg-1)] border border-[var(--border-hi)] px-2.5 py-1.5 text-white"
                         >
                           <option value="bottom-right">Bottom Right</option>
@@ -1540,14 +1718,19 @@ export function AdminCertificates() {
                         </select>
                       </div>
                       <div>
-                        <span className="text-[var(--muted-2)]">QR Size ({layout.qrSizePct}%)</span>
+                        <span className="text-[var(--muted-2)]">
+                          QR Size ({layout.qrSizePct}%)
+                        </span>
                         <input
                           type="range"
                           min={11}
                           max={26}
                           value={layout.qrSizePct}
                           onChange={(e) =>
-                            setLayout((l) => ({ ...l, qrSizePct: Number(e.target.value) }))
+                            setLayout((l) => ({
+                              ...l,
+                              qrSizePct: Number(e.target.value),
+                            }))
                           }
                           className="w-full mt-2 accent-[var(--accent)]"
                         />
@@ -1557,14 +1740,19 @@ export function AdminCertificates() {
                     {layout.overlayMode !== "qr_only" && (
                       <div className="grid grid-cols-3 gap-2.5 text-xs pt-1">
                         <div>
-                          <span className="text-[var(--muted-2)]">Name Y ({layout.nameY}%)</span>
+                          <span className="text-[var(--muted-2)]">
+                            Name Y ({layout.nameY}%)
+                          </span>
                           <input
                             type="range"
                             min={20}
                             max={85}
                             value={layout.nameY}
                             onChange={(e) =>
-                              setLayout((l) => ({ ...l, nameY: Number(e.target.value) }))
+                              setLayout((l) => ({
+                                ...l,
+                                nameY: Number(e.target.value),
+                              }))
                             }
                             className="w-full mt-1.5 accent-[var(--accent)]"
                           />
@@ -1579,27 +1767,37 @@ export function AdminCertificates() {
                             max={90}
                             value={layout.amountY}
                             onChange={(e) =>
-                              setLayout((l) => ({ ...l, amountY: Number(e.target.value) }))
+                              setLayout((l) => ({
+                                ...l,
+                                amountY: Number(e.target.value),
+                              }))
                             }
                             className="w-full mt-1.5 accent-[var(--accent)]"
                           />
                         </div>
                         <div>
-                          <span className="text-[var(--muted-2)]">Meta Y ({layout.metaY}%)</span>
+                          <span className="text-[var(--muted-2)]">
+                            Meta Y ({layout.metaY}%)
+                          </span>
                           <input
                             type="range"
                             min={30}
                             max={92}
                             value={layout.metaY}
                             onChange={(e) =>
-                              setLayout((l) => ({ ...l, metaY: Number(e.target.value) }))
+                              setLayout((l) => ({
+                                ...l,
+                                metaY: Number(e.target.value),
+                              }))
                             }
                             className="w-full mt-1.5 accent-[var(--accent)]"
                           />
                         </div>
                         <div className="col-span-3 flex flex-wrap items-center justify-between gap-2 pt-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-[var(--muted-2)]">Text Ink:</span>
+                            <span className="text-[var(--muted-2)]">
+                              Text Ink:
+                            </span>
                             {[
                               { label: "White", color: "#f8fafc" },
                               { label: "Dark", color: "#0f172a" },
@@ -1608,7 +1806,12 @@ export function AdminCertificates() {
                               <button
                                 key={opt.color}
                                 type="button"
-                                onClick={() => setLayout((l) => ({ ...l, textColor: opt.color }))}
+                                onClick={() =>
+                                  setLayout((l) => ({
+                                    ...l,
+                                    textColor: opt.color,
+                                  }))
+                                }
                                 className={`px-2 py-0.5 rounded border text-[11px] ${
                                   layout.textColor === opt.color
                                     ? "border-[var(--accent)] text-white"
@@ -1622,7 +1825,12 @@ export function AdminCertificates() {
                           <div className="flex items-center gap-1">
                             <button
                               type="button"
-                              onClick={() => setLayout((l) => ({ ...l, textAlign: "center" }))}
+                              onClick={() =>
+                                setLayout((l) => ({
+                                  ...l,
+                                  textAlign: "center",
+                                }))
+                              }
                               className={`px-2 py-0.5 rounded text-[11px] ${
                                 layout.textAlign !== "left"
                                   ? "bg-white/15 text-white"
@@ -1633,7 +1841,9 @@ export function AdminCertificates() {
                             </button>
                             <button
                               type="button"
-                              onClick={() => setLayout((l) => ({ ...l, textAlign: "left" }))}
+                              onClick={() =>
+                                setLayout((l) => ({ ...l, textAlign: "left" }))
+                              }
                               className={`px-2 py-0.5 rounded text-[11px] ${
                                 layout.textAlign === "left"
                                   ? "bg-white/15 text-white"
@@ -1654,7 +1864,9 @@ export function AdminCertificates() {
                     <input
                       type="checkbox"
                       checked={editing.visible}
-                      onChange={(e) => setEditing({ ...editing, visible: e.target.checked })}
+                      onChange={(e) =>
+                        setEditing({ ...editing, visible: e.target.checked })
+                      }
                     />{" "}
                     Visible on website & payout verification
                   </label>
@@ -1663,7 +1875,9 @@ export function AdminCertificates() {
                     <Input
                       type="number"
                       value={editing.order}
-                      onChange={(e) => setEditing({ ...editing, order: +e.target.value })}
+                      onChange={(e) =>
+                        setEditing({ ...editing, order: +e.target.value })
+                      }
                       className="w-16 bg-[var(--bg-1)] border-[var(--border-hi)] h-8"
                     />
                   </div>
@@ -1677,7 +1891,8 @@ export function AdminCertificates() {
                     <span>Live Certificate Preview</span>
                     {generating && (
                       <span className="inline-flex items-center gap-1 text-[var(--accent)]">
-                        <Loader2 size={12} className="animate-spin" /> Rendering…
+                        <Loader2 size={12} className="animate-spin" />{" "}
+                        Rendering…
                       </span>
                     )}
                   </div>
@@ -1733,7 +1948,9 @@ export function AdminCertificates() {
                       className="w-20 h-20 rounded-md bg-white p-1 shrink-0"
                     />
                     <div className="min-w-0 text-xs space-y-1">
-                      <div className="font-medium text-white">Verification QR Ready</div>
+                      <div className="font-medium text-white">
+                        Verification QR Ready
+                      </div>
                       <div className="font-mono text-[var(--accent)]">
                         {editing.certificate_code}
                       </div>
@@ -1797,7 +2014,9 @@ export function AdminPayoutRequests() {
   };
   const saveNote = async () => {
     try {
-      await api.patch(`/payout-requests/${view.id}`, { admin_note: view.admin_note || "" });
+      await api.patch(`/payout-requests/${view.id}`, {
+        admin_note: view.admin_note || "",
+      });
       toast.success("Note saved");
       load();
     } catch (e) {
@@ -1811,7 +2030,12 @@ export function AdminPayoutRequests() {
       if (view?.id === id) setView(null);
       load();
     } catch (e) {
-      toast.error(formatApiError(e.response?.data?.detail, "Could not delete payout request"));
+      toast.error(
+        formatApiError(
+          e.response?.data?.detail,
+          "Could not delete payout request",
+        ),
+      );
     }
   };
 
@@ -1847,7 +2071,10 @@ export function AdminPayoutRequests() {
           <TableBody>
             {rows.length === 0 && (
               <TableRow className="border-[var(--border)]">
-                <TableCell colSpan={7} className="text-center text-[var(--muted)] py-10">
+                <TableCell
+                  colSpan={7}
+                  className="text-center text-[var(--muted)] py-10"
+                >
                   No payout requests yet.
                 </TableCell>
               </TableRow>
@@ -1872,7 +2099,9 @@ export function AdminPayoutRequests() {
                 <TableCell className="text-[var(--accent)] font-mono">
                   {formatINR(r.amount)}
                 </TableCell>
-                <TableCell className="uppercase text-xs font-mono">{r.method}</TableCell>
+                <TableCell className="uppercase text-xs font-mono">
+                  {r.method}
+                </TableCell>
                 <TableCell>
                   <Badge s={r.status} />
                 </TableCell>
@@ -1897,7 +2126,9 @@ export function AdminPayoutRequests() {
       <Dialog open={!!view} onOpenChange={(o) => !o && setView(null)}>
         <DialogContent className="bg-[var(--bg-2)] border-[var(--border)] text-white max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-display text-2xl">Payout Request</DialogTitle>
+            <DialogTitle className="font-display text-2xl">
+              Payout Request
+            </DialogTitle>
           </DialogHeader>
           {view && (
             <div className="space-y-5">
@@ -1913,7 +2144,10 @@ export function AdminPayoutRequests() {
               <div className="grid md:grid-cols-2 gap-3 text-sm">
                 <Info label="Email" value={view.email} />
                 <Info label="Phone" value={view.phone} />
-                <Info label="Funded Account ID" value={view.account_id || "—"} />
+                <Info
+                  label="Funded Account ID"
+                  value={view.account_id || "—"}
+                />
                 <Info label="Plan" value={view.plan || "—"} />
                 <Info label="Amount" value={formatINR(view.amount)} accent />
                 <Info label="Method" value={view.method?.toUpperCase()} />
@@ -1922,9 +2156,16 @@ export function AdminPayoutRequests() {
                 <Info label="UPI ID" value={view.upi_id || "—"} mono />
               ) : (
                 <div className="grid md:grid-cols-2 gap-3 text-sm">
-                  <Info label="Account Holder" value={view.account_holder || "—"} />
+                  <Info
+                    label="Account Holder"
+                    value={view.account_holder || "—"}
+                  />
                   <Info label="Bank Name" value={view.bank_name || "—"} />
-                  <Info label="Account Number" value={view.account_number || "—"} mono />
+                  <Info
+                    label="Account Number"
+                    value={view.account_number || "—"}
+                    mono
+                  />
                   <Info label="IFSC" value={view.ifsc || "—"} mono />
                 </div>
               )}
@@ -1933,7 +2174,9 @@ export function AdminPayoutRequests() {
                 <Label>Admin Note (internal)</Label>
                 <Textarea
                   value={view.admin_note || ""}
-                  onChange={(e) => setView({ ...view, admin_note: e.target.value })}
+                  onChange={(e) =>
+                    setView({ ...view, admin_note: e.target.value })
+                  }
                   className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                   rows={3}
                   placeholder="Verification notes, UTR of transfer, etc."
@@ -2042,7 +2285,9 @@ export function AdminOrders() {
         setFpConfig(normalizeFundingProductsConfig(fpRes.data));
       }
     } catch (e) {
-      toast.error(formatApiError(e?.response?.data?.detail, "Could not load orders"));
+      toast.error(
+        formatApiError(e?.response?.data?.detail, "Could not load orders"),
+      );
     }
   };
   useEffect(() => {
@@ -2050,12 +2295,16 @@ export function AdminOrders() {
   }, []);
 
   const openAssignModal = (o) => {
-    const pType = [PRODUCT_TYPES.INSTANT, PRODUCT_TYPES.ONE_STEP].includes(o.product_type)
+    const pType = [PRODUCT_TYPES.INSTANT, PRODUCT_TYPES.ONE_STEP].includes(
+      o.product_type,
+    )
       ? o.product_type
       : PRODUCT_TYPES.CLASSIC;
     const matchedPlan =
       plans.find((pl) => pl.id === o.plan_id) ||
-      plans.find((pl) => Number(pl.account_size) === Number(o.plan_account_size)) ||
+      plans.find(
+        (pl) => Number(pl.account_size) === Number(o.plan_account_size),
+      ) ||
       plans[0];
     const snap = o.product_config_snapshot || {};
     if (pType === PRODUCT_TYPES.INSTANT) {
@@ -2069,15 +2318,22 @@ export function AdminOrders() {
           `Instant Funding ₹${Number(o.plan_account_size || 100000).toLocaleString("en-IN")}`,
         account_type: "Funded",
         starting_capital: Number(o.plan_account_size || 100000),
-        drawdown_mode: o.drawdown_mode || cfg.default_drawdown_mode || "intraday",
+        drawdown_mode:
+          o.drawdown_mode || cfg.default_drawdown_mode || "intraday",
         payout_cycle: cycle,
         profit_target_pct: 0,
-        daily_loss_limit_pct: Number(snap.daily_loss_limit_pct ?? cfg.daily_loss_limit_pct ?? 3),
-        max_loss_limit: Number(snap.trailing_drawdown_pct ?? cfg.trailing_drawdown_pct ?? 5),
+        daily_loss_limit_pct: Number(
+          snap.daily_loss_limit_pct ?? cfg.daily_loss_limit_pct ?? 3,
+        ),
+        max_loss_limit: Number(
+          snap.trailing_drawdown_pct ?? cfg.trailing_drawdown_pct ?? 5,
+        ),
         min_trading_days: 0,
         total_trading_days: 0,
         trades_per_day: Number(snap.trades_per_day ?? cfg.trades_per_day ?? 0),
-        profit_split: Number(snap.profit_split ?? (cycle === "monthly" ? 90 : 80)),
+        profit_split: Number(
+          snap.profit_split ?? (cycle === "monthly" ? 90 : 80),
+        ),
         auto_activate_funded: true,
         note: "",
       });
@@ -2093,10 +2349,18 @@ export function AdminOrders() {
         starting_capital: Number(o.plan_account_size || 100000),
         drawdown_mode: "fixed",
         payout_cycle: "standard",
-        profit_target_pct: Number(snap.profit_target_pct ?? cfg.profit_target_pct ?? 10),
-        daily_loss_limit_pct: Number(snap.daily_loss_limit_pct ?? cfg.daily_loss_limit_pct ?? 3),
-        max_loss_limit: Number(snap.overall_loss_limit_pct ?? cfg.overall_loss_limit_pct ?? 6),
-        min_trading_days: Number(snap.min_trading_days ?? cfg.min_trading_days ?? 3),
+        profit_target_pct: Number(
+          snap.profit_target_pct ?? cfg.profit_target_pct ?? 10,
+        ),
+        daily_loss_limit_pct: Number(
+          snap.daily_loss_limit_pct ?? cfg.daily_loss_limit_pct ?? 3,
+        ),
+        max_loss_limit: Number(
+          snap.overall_loss_limit_pct ?? cfg.overall_loss_limit_pct ?? 6,
+        ),
+        min_trading_days: Number(
+          snap.min_trading_days ?? cfg.min_trading_days ?? 3,
+        ),
         total_trading_days: 0,
         trades_per_day: Number(snap.trades_per_day ?? cfg.trades_per_day ?? 0),
         profit_split: Number(snap.profit_split ?? cfg.profit_split ?? 80),
@@ -2109,7 +2373,9 @@ export function AdminOrders() {
         plan_id: matchedPlan?.id || o.plan_id || "",
         plan_name: o.plan_name || matchedPlan?.name || "IndiFunded Standard",
         account_type: "Challenge",
-        starting_capital: Number(o.plan_account_size || matchedPlan?.account_size || 100000),
+        starting_capital: Number(
+          o.plan_account_size || matchedPlan?.account_size || 100000,
+        ),
         drawdown_mode: "fixed",
         payout_cycle: "standard",
         profit_target_pct: Number(evalDefaults.profit_target_pct ?? 8),
@@ -2173,7 +2439,9 @@ export function AdminOrders() {
         account_type: "Challenge",
         plan_id: firstPlan?.id || "",
         plan_name: firstPlan?.name || "IndiFunded Standard",
-        starting_capital: Number(firstPlan?.account_size || f.starting_capital || 100000),
+        starting_capital: Number(
+          firstPlan?.account_size || f.starting_capital || 100000,
+        ),
         profit_target_pct: Number(evalDefaults.profit_target_pct ?? 8),
         daily_loss_limit_pct: Number(evalDefaults.daily_loss_limit_pct ?? 5),
         max_loss_limit: Number(evalDefaults.max_loss_limit ?? 20),
@@ -2190,25 +2458,33 @@ export function AdminOrders() {
     if (!assignOrder) return;
     setAssignBusy(true);
     try {
-      const res = await api.post(`/admin/orders/${assignOrder.id}/assign-challenge`, {
-        ...assignForm,
-        starting_capital: Number(assignForm.starting_capital),
-        profit_target_pct: Number(assignForm.profit_target_pct),
-        daily_loss_limit_pct: Number(assignForm.daily_loss_limit_pct),
-        max_loss_limit: Number(assignForm.max_loss_limit),
-        min_trading_days: Number(assignForm.min_trading_days),
-        total_trading_days: Number(assignForm.total_trading_days),
-        trades_per_day: Number(assignForm.trades_per_day),
-        profit_split: Number(assignForm.profit_split),
-        replace_existing: Boolean(assignOrder.assigned_account_id),
-      });
+      const res = await api.post(
+        `/admin/orders/${assignOrder.id}/assign-challenge`,
+        {
+          ...assignForm,
+          starting_capital: Number(assignForm.starting_capital),
+          profit_target_pct: Number(assignForm.profit_target_pct),
+          daily_loss_limit_pct: Number(assignForm.daily_loss_limit_pct),
+          max_loss_limit: Number(assignForm.max_loss_limit),
+          min_trading_days: Number(assignForm.min_trading_days),
+          total_trading_days: Number(assignForm.total_trading_days),
+          trades_per_day: Number(assignForm.trades_per_day),
+          profit_split: Number(assignForm.profit_split),
+          replace_existing: Boolean(assignOrder.assigned_account_id),
+        },
+      );
       toast.success(
         `Challenge assigned (${res.data?.account?.account_number || ""}) & automated rules started`,
       );
       setAssignOrder(null);
       await load();
     } catch (e2) {
-      toast.error(formatApiError(e2?.response?.data?.detail, "Could not assign challenge"));
+      toast.error(
+        formatApiError(
+          e2?.response?.data?.detail,
+          "Could not assign challenge",
+        ),
+      );
     } finally {
       setAssignBusy(false);
     }
@@ -2229,16 +2505,34 @@ export function AdminOrders() {
       toast.success("Deleted");
       load();
     } catch (e) {
-      toast.error(formatApiError(e.response?.data?.detail, "Could not delete order"));
+      toast.error(
+        formatApiError(e.response?.data?.detail, "Could not delete order"),
+      );
     }
   };
 
   const statusBadge = (s) => {
     const map = {
-      pending_verification: { bg: "rgba(245,182,56,0.15)", text: "#ffd166", label: "Pending" },
-      pending_payment: { bg: "rgba(245,182,56,0.12)", text: "#ffd166", label: "Awaiting Pay" },
-      completed: { bg: "rgba(41,211,154,0.15)", text: "#29d39a", label: "Verified" },
-      rejected: { bg: "rgba(255,85,116,0.15)", text: "#ff5574", label: "Rejected" },
+      pending_verification: {
+        bg: "rgba(245,182,56,0.15)",
+        text: "#ffd166",
+        label: "Pending",
+      },
+      pending_payment: {
+        bg: "rgba(245,182,56,0.12)",
+        text: "#ffd166",
+        label: "Awaiting Pay",
+      },
+      completed: {
+        bg: "rgba(41,211,154,0.15)",
+        text: "#29d39a",
+        label: "Verified",
+      },
+      rejected: {
+        bg: "rgba(255,85,116,0.15)",
+        text: "#ff5574",
+        label: "Rejected",
+      },
     };
     const m = map[s] || map["pending_verification"];
     return (
@@ -2256,8 +2550,8 @@ export function AdminOrders() {
       <div className="chip mb-3">Orders &amp; Challenge Assignment</div>
       <h1 className="font-display text-4xl">Orders ({orders.length})</h1>
       <p className="text-sm text-[var(--muted)] mt-2">
-        Verify payments and assign the trader&apos;s IndiFunded Challenge, 1-Step, or Instant
-        account to start automated rules immediately.
+        Verify payments and assign the trader&apos;s IndiFunded Challenge,
+        1-Step, or Instant account to start automated rules immediately.
       </p>
       <div className="card-panel overflow-hidden mt-10">
         <Table>
@@ -2282,8 +2576,12 @@ export function AdminOrders() {
               >
                 <TableCell>
                   <div>{o.customer_name || "—"}</div>
-                  <div className="text-xs text-[var(--muted-2)]">{o.customer_email}</div>
-                  <div className="text-xs text-[var(--muted-2)] font-mono">{o.customer_phone}</div>
+                  <div className="text-xs text-[var(--muted-2)]">
+                    {o.customer_email}
+                  </div>
+                  <div className="text-xs text-[var(--muted-2)] font-mono">
+                    {o.customer_phone}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div>{o.plan_name}</div>
@@ -2296,7 +2594,9 @@ export function AdminOrders() {
                 <TableCell className="text-[var(--accent)] font-mono">
                   {formatINR(o.amount)}
                 </TableCell>
-                <TableCell className="font-mono text-xs">{o.utr || "—"}</TableCell>
+                <TableCell className="font-mono text-xs">
+                  {o.utr || "—"}
+                </TableCell>
                 <TableCell>{statusBadge(o.status)}</TableCell>
                 <TableCell>
                   {o.assigned_account_number ? (
@@ -2349,7 +2649,10 @@ export function AdminOrders() {
                       </button>
                     </>
                   )}
-                  <ConfirmDeleteButton onDelete={() => del(o.id)} ariaLabel="Delete order" />
+                  <ConfirmDeleteButton
+                    onDelete={() => del(o.id)}
+                    ariaLabel="Delete order"
+                  />
                 </TableCell>
               </TableRow>
             ))}
@@ -2357,7 +2660,10 @@ export function AdminOrders() {
         </Table>
       </div>
 
-      <Dialog open={!!assignOrder} onOpenChange={(open) => !open && setAssignOrder(null)}>
+      <Dialog
+        open={!!assignOrder}
+        onOpenChange={(open) => !open && setAssignOrder(null)}
+      >
         <DialogContent className="bg-[var(--bg-2)] border-[var(--border)] text-white max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl">
@@ -2379,7 +2685,9 @@ export function AdminOrders() {
                   <div className="text-[var(--accent)] font-semibold">
                     {formatINR(assignOrder.amount)}
                   </div>
-                  <div className="text-[var(--muted-2)]">UTR: {assignOrder.utr || "—"}</div>
+                  <div className="text-[var(--muted-2)]">
+                    UTR: {assignOrder.utr || "—"}
+                  </div>
                 </div>
               </div>
 
@@ -2387,7 +2695,10 @@ export function AdminOrders() {
                 <Label>Challenge Type (IndiFunded Challenge First)</Label>
                 <div className="seg w-full mt-2">
                   {[
-                    { id: PRODUCT_TYPES.CLASSIC, label: "IndiFunded Challenge" },
+                    {
+                      id: PRODUCT_TYPES.CLASSIC,
+                      label: "IndiFunded Challenge",
+                    },
                     { id: PRODUCT_TYPES.ONE_STEP, label: "1-Step Challenge" },
                     { id: PRODUCT_TYPES.INSTANT, label: "Instant Funding" },
                   ].map((opt) => (
@@ -2404,47 +2715,58 @@ export function AdminOrders() {
                 </div>
               </div>
 
-              {assignForm.product_type === PRODUCT_TYPES.CLASSIC && plans.length > 0 && (
-                <div>
-                  <Label>Select IndiFunded Challenge Plan</Label>
-                  <div className="grid sm:grid-cols-2 gap-2 mt-2">
-                    {plans.map((pl) => {
-                      const active = assignForm.plan_id === pl.id;
-                      return (
-                        <button
-                          key={pl.id}
-                          type="button"
-                          onClick={() =>
-                            setAssignForm((f) => ({
-                              ...f,
-                              plan_id: pl.id,
-                              plan_name: pl.name,
-                              starting_capital: Number(pl.account_size || 100000),
-                            }))
-                          }
-                          className={`text-left p-2.5 rounded-lg border text-xs transition ${
-                            active
-                              ? "border-[var(--accent)] bg-[var(--accent)]/15 text-white"
-                              : "border-[var(--border)] bg-[var(--bg-1)] text-[var(--muted)] hover:border-[var(--border-hi)]"
-                          }`}
-                        >
-                          <div className="font-semibold text-white">{pl.name}</div>
-                          <div className="font-mono text-[11px] text-[var(--accent)]">
-                            {formatINR(pl.account_size)} Capital · Fee {formatINR(pl.price)}
-                          </div>
-                        </button>
-                      );
-                    })}
+              {assignForm.product_type === PRODUCT_TYPES.CLASSIC &&
+                plans.length > 0 && (
+                  <div>
+                    <Label>Select IndiFunded Challenge Plan</Label>
+                    <div className="grid sm:grid-cols-2 gap-2 mt-2">
+                      {plans.map((pl) => {
+                        const active = assignForm.plan_id === pl.id;
+                        return (
+                          <button
+                            key={pl.id}
+                            type="button"
+                            onClick={() =>
+                              setAssignForm((f) => ({
+                                ...f,
+                                plan_id: pl.id,
+                                plan_name: pl.name,
+                                starting_capital: Number(
+                                  pl.account_size || 100000,
+                                ),
+                              }))
+                            }
+                            className={`text-left p-2.5 rounded-lg border text-xs transition ${
+                              active
+                                ? "border-[var(--accent)] bg-[var(--accent)]/15 text-white"
+                                : "border-[var(--border)] bg-[var(--bg-1)] text-[var(--muted)] hover:border-[var(--border-hi)]"
+                            }`}
+                          >
+                            <div className="font-semibold text-white">
+                              {pl.name}
+                            </div>
+                            <div className="font-mono text-[11px] text-[var(--accent)]">
+                              {formatINR(pl.account_size)} Capital · Fee{" "}
+                              {formatINR(pl.price)}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
               <div className="grid sm:grid-cols-2 gap-3">
                 <div>
                   <Label>Plan Label</Label>
                   <Input
                     value={assignForm.plan_name}
-                    onChange={(e) => setAssignForm({ ...assignForm, plan_name: e.target.value })}
+                    onChange={(e) =>
+                      setAssignForm({
+                        ...assignForm,
+                        plan_name: e.target.value,
+                      })
+                    }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-1.5"
                     required
                   />
@@ -2456,7 +2778,10 @@ export function AdminOrders() {
                     min="1000"
                     value={assignForm.starting_capital}
                     onChange={(e) =>
-                      setAssignForm({ ...assignForm, starting_capital: Number(e.target.value) })
+                      setAssignForm({
+                        ...assignForm,
+                        starting_capital: Number(e.target.value),
+                      })
                     }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-1.5 font-mono"
                     required
@@ -2474,7 +2799,10 @@ export function AdminOrders() {
                     max="100"
                     value={assignForm.profit_target_pct}
                     onChange={(e) =>
-                      setAssignForm({ ...assignForm, profit_target_pct: Number(e.target.value) })
+                      setAssignForm({
+                        ...assignForm,
+                        profit_target_pct: Number(e.target.value),
+                      })
                     }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-1 font-mono text-xs"
                   />
@@ -2505,7 +2833,10 @@ export function AdminOrders() {
                     max="50"
                     value={assignForm.max_loss_limit}
                     onChange={(e) =>
-                      setAssignForm({ ...assignForm, max_loss_limit: Number(e.target.value) })
+                      setAssignForm({
+                        ...assignForm,
+                        max_loss_limit: Number(e.target.value),
+                      })
                     }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-1 font-mono text-xs"
                   />
@@ -2518,7 +2849,10 @@ export function AdminOrders() {
                     max="95"
                     value={assignForm.profit_split}
                     onChange={(e) =>
-                      setAssignForm({ ...assignForm, profit_split: Number(e.target.value) })
+                      setAssignForm({
+                        ...assignForm,
+                        profit_split: Number(e.target.value),
+                      })
                     }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-1 font-mono text-xs"
                   />
@@ -2530,7 +2864,10 @@ export function AdminOrders() {
                     min="0"
                     value={assignForm.min_trading_days}
                     onChange={(e) =>
-                      setAssignForm({ ...assignForm, min_trading_days: Number(e.target.value) })
+                      setAssignForm({
+                        ...assignForm,
+                        min_trading_days: Number(e.target.value),
+                      })
                     }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-1 font-mono text-xs"
                   />
@@ -2542,7 +2879,10 @@ export function AdminOrders() {
                     min="0"
                     value={assignForm.total_trading_days}
                     onChange={(e) =>
-                      setAssignForm({ ...assignForm, total_trading_days: Number(e.target.value) })
+                      setAssignForm({
+                        ...assignForm,
+                        total_trading_days: Number(e.target.value),
+                      })
                     }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-1 font-mono text-xs"
                   />
@@ -2554,7 +2894,10 @@ export function AdminOrders() {
                     min="0"
                     value={assignForm.trades_per_day}
                     onChange={(e) =>
-                      setAssignForm({ ...assignForm, trades_per_day: Number(e.target.value) })
+                      setAssignForm({
+                        ...assignForm,
+                        trades_per_day: Number(e.target.value),
+                      })
                     }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-1 font-mono text-xs"
                   />
@@ -2563,7 +2906,12 @@ export function AdminOrders() {
                   <Label className="text-[11px]">Account Status</Label>
                   <select
                     value={assignForm.account_type}
-                    onChange={(e) => setAssignForm({ ...assignForm, account_type: e.target.value })}
+                    onChange={(e) =>
+                      setAssignForm({
+                        ...assignForm,
+                        account_type: e.target.value,
+                      })
+                    }
                     className="input-dark mt-1 text-xs font-mono"
                   >
                     <option value="Challenge">Challenge (Active)</option>
@@ -2576,7 +2924,9 @@ export function AdminOrders() {
                 <Label>Admin Assignment Note</Label>
                 <Input
                   value={assignForm.note}
-                  onChange={(e) => setAssignForm({ ...assignForm, note: e.target.value })}
+                  onChange={(e) =>
+                    setAssignForm({ ...assignForm, note: e.target.value })
+                  }
                   placeholder="Optional note visible in trader ledger…"
                   className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-1.5 text-xs"
                 />
@@ -2596,8 +2946,14 @@ export function AdminOrders() {
                   className="btn-amber rounded-full px-5 py-2.5 text-sm inline-flex items-center gap-1.5 disabled:opacity-50"
                   data-testid="assign-challenge-submit"
                 >
-                  {assignBusy ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
-                  {assignBusy ? "Assigning & Starting Rules…" : "Assign Challenge & Start Rules"}
+                  {assignBusy ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Zap size={14} />
+                  )}
+                  {assignBusy
+                    ? "Assigning & Starting Rules…"
+                    : "Assign Challenge & Start Rules"}
                 </button>
               </DialogFooter>
             </form>
@@ -2651,7 +3007,9 @@ export function AdminCoupons() {
       toast.success("Deleted");
       load();
     } catch (e) {
-      toast.error(formatApiError(e.response?.data?.detail, "Could not delete coupon"));
+      toast.error(
+        formatApiError(e.response?.data?.detail, "Could not delete coupon"),
+      );
     }
   };
   return (
@@ -2707,7 +3065,10 @@ export function AdminCoupons() {
                   >
                     <Pencil size={14} />
                   </button>
-                  <ConfirmDeleteButton onDelete={() => del(r.id)} ariaLabel="Delete coupon" />
+                  <ConfirmDeleteButton
+                    onDelete={() => del(r.id)}
+                    ariaLabel="Delete coupon"
+                  />
                 </TableCell>
               </TableRow>
             ))}
@@ -2728,7 +3089,12 @@ export function AdminCoupons() {
                 <Label>Code</Label>
                 <Input
                   value={editing.code}
-                  onChange={(e) => setEditing({ ...editing, code: e.target.value.toUpperCase() })}
+                  onChange={(e) =>
+                    setEditing({
+                      ...editing,
+                      code: e.target.value.toUpperCase(),
+                    })
+                  }
                   placeholder="e.g. LAUNCH20"
                   className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2 font-mono tracking-wider"
                 />
@@ -2741,7 +3107,12 @@ export function AdminCoupons() {
                     min="0"
                     max="90"
                     value={editing.discount_percent}
-                    onChange={(e) => setEditing({ ...editing, discount_percent: +e.target.value })}
+                    onChange={(e) =>
+                      setEditing({
+                        ...editing,
+                        discount_percent: +e.target.value,
+                      })
+                    }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                   />
                 </div>
@@ -2753,7 +3124,8 @@ export function AdminCoupons() {
                     onChange={(e) =>
                       setEditing({
                         ...editing,
-                        max_uses: e.target.value === "" ? null : +e.target.value,
+                        max_uses:
+                          e.target.value === "" ? null : +e.target.value,
                       })
                     }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
@@ -2765,7 +3137,9 @@ export function AdminCoupons() {
                 <Input
                   type="date"
                   value={editing.expires_at || ""}
-                  onChange={(e) => setEditing({ ...editing, expires_at: e.target.value })}
+                  onChange={(e) =>
+                    setEditing({ ...editing, expires_at: e.target.value })
+                  }
                   className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                 />
               </div>
@@ -2773,7 +3147,9 @@ export function AdminCoupons() {
                 <Label>Description (internal)</Label>
                 <Input
                   value={editing.description || ""}
-                  onChange={(e) => setEditing({ ...editing, description: e.target.value })}
+                  onChange={(e) =>
+                    setEditing({ ...editing, description: e.target.value })
+                  }
                   className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                 />
               </div>
@@ -2781,7 +3157,9 @@ export function AdminCoupons() {
                 <input
                   type="checkbox"
                   checked={editing.active}
-                  onChange={(e) => setEditing({ ...editing, active: e.target.checked })}
+                  onChange={(e) =>
+                    setEditing({ ...editing, active: e.target.checked })
+                  }
                 />{" "}
                 Active
               </label>
@@ -2816,6 +3194,7 @@ const emptyLB = {
 export function AdminLeaderboard() {
   const [rows, setRows] = useState([]);
   const [editing, setEditing] = useState(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
   const load = () =>
     api
       .get("/leaderboard?limit=100")
@@ -2847,20 +3226,33 @@ export function AdminLeaderboard() {
       broadcastSync("leaderboard");
       load();
     } catch (e) {
-      toast.error(formatApiError(e.response?.data?.detail, "Could not delete entry"));
+      toast.error(
+        formatApiError(e.response?.data?.detail, "Could not delete entry"),
+      );
     }
   };
 
-  const uploadAvatar = (e) => {
+  const uploadAvatar = async (e) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
-    if (file.size > 3 * 1024 * 1024) {
-      toast.error("Image too large (max 3MB)");
-      return;
+    setAvatarUploading(true);
+    try {
+      const data = await uploadAdminMedia(file, { kind: "image" });
+      if (data?.url) {
+        setEditing((prev) => (prev ? { ...prev, avatar_url: data.url } : prev));
+        toast.success("Photo uploaded — click Save");
+      }
+    } catch (err) {
+      toast.error(
+        formatApiError(
+          err?.response?.data?.detail,
+          err?.message || "Avatar upload failed",
+        ),
+      );
+    } finally {
+      setAvatarUploading(false);
     }
-    const reader = new FileReader();
-    reader.onload = () => setEditing((prev) => ({ ...prev, avatar_url: reader.result }));
-    reader.readAsDataURL(file);
   };
 
   return (
@@ -2898,7 +3290,9 @@ export function AdminLeaderboard() {
                 className="border-[var(--border)]"
                 data-testid={`lb-row-${r.id}`}
               >
-                <TableCell className="font-mono text-[var(--muted-2)]">{i + 1}</TableCell>
+                <TableCell className="font-mono text-[var(--muted-2)]">
+                  {i + 1}
+                </TableCell>
                 <TableCell>
                   {r.avatar_url ? (
                     <img
@@ -2912,7 +3306,9 @@ export function AdminLeaderboard() {
                 </TableCell>
                 <TableCell className="font-display">{r.name}</TableCell>
                 <TableCell>{r.plan}</TableCell>
-                <TableCell className="text-sm text-[var(--muted)]">{r.city || "—"}</TableCell>
+                <TableCell className="text-sm text-[var(--muted)]">
+                  {r.city || "—"}
+                </TableCell>
                 <TableCell className="text-[var(--accent)] font-mono">
                   {formatINR(r.total_payout)}
                 </TableCell>
@@ -2947,22 +3343,34 @@ export function AdminLeaderboard() {
                 <Label>Full Name</Label>
                 <Input
                   value={editing.name}
-                  onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+                  onChange={(e) =>
+                    setEditing({ ...editing, name: e.target.value })
+                  }
                   className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                 />
               </div>
               <div>
                 <Label>Avatar Photo</Label>
-                <div className="mt-2 flex items-center gap-3">
+                <div className="mt-2 flex items-center gap-3 flex-wrap">
                   <label className="btn-amber rounded-full px-4 py-2 text-sm inline-flex items-center gap-2 cursor-pointer">
-                    <Upload size={14} /> Upload
+                    <Upload size={14} />{" "}
+                    {avatarUploading ? "Uploading…" : "Upload"}
                     <input
                       type="file"
                       accept="image/*"
+                      disabled={avatarUploading}
                       onChange={uploadAvatar}
                       className="hidden"
                     />
                   </label>
+                  <Input
+                    value={editing.avatar_url || ""}
+                    onChange={(e) =>
+                      setEditing({ ...editing, avatar_url: e.target.value })
+                    }
+                    placeholder="Or paste photo URL (https://...)"
+                    className="bg-[var(--bg-1)] border-[var(--border-hi)] flex-1 min-w-[180px]"
+                  />
                   {editing.avatar_url && (
                     <img
                       src={editing.avatar_url}
@@ -2986,7 +3394,9 @@ export function AdminLeaderboard() {
                   <Label>Plan</Label>
                   <Input
                     value={editing.plan}
-                    onChange={(e) => setEditing({ ...editing, plan: e.target.value })}
+                    onChange={(e) =>
+                      setEditing({ ...editing, plan: e.target.value })
+                    }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                   />
                 </div>
@@ -2994,7 +3404,9 @@ export function AdminLeaderboard() {
                   <Label>City</Label>
                   <Input
                     value={editing.city}
-                    onChange={(e) => setEditing({ ...editing, city: e.target.value })}
+                    onChange={(e) =>
+                      setEditing({ ...editing, city: e.target.value })
+                    }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                   />
                 </div>
@@ -3003,7 +3415,9 @@ export function AdminLeaderboard() {
                   <Input
                     type="number"
                     value={editing.total_payout}
-                    onChange={(e) => setEditing({ ...editing, total_payout: +e.target.value })}
+                    onChange={(e) =>
+                      setEditing({ ...editing, total_payout: +e.target.value })
+                    }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                   />
                 </div>
@@ -3011,7 +3425,9 @@ export function AdminLeaderboard() {
                   <Label>Rank Note (optional)</Label>
                   <Input
                     value={editing.rank_note}
-                    onChange={(e) => setEditing({ ...editing, rank_note: e.target.value })}
+                    onChange={(e) =>
+                      setEditing({ ...editing, rank_note: e.target.value })
+                    }
                     placeholder="Rising Star"
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                   />
@@ -3021,7 +3437,9 @@ export function AdminLeaderboard() {
                 <input
                   type="checkbox"
                   checked={editing.verified}
-                  onChange={(e) => setEditing({ ...editing, verified: e.target.checked })}
+                  onChange={(e) =>
+                    setEditing({ ...editing, verified: e.target.checked })
+                  }
                 />{" "}
                 Verified badge
               </label>
@@ -3059,7 +3477,9 @@ export function AdminReferrals() {
       toast.success("Deleted");
       load();
     } catch (e) {
-      toast.error(formatApiError(e.response?.data?.detail, "Could not delete referral"));
+      toast.error(
+        formatApiError(e.response?.data?.detail, "Could not delete referral"),
+      );
     }
   };
   return (
@@ -3089,16 +3509,25 @@ export function AdminReferrals() {
                 className="border-[var(--border)]"
                 data-testid={`ref-row-${r.id}`}
               >
-                <TableCell className="font-mono text-[var(--accent)]">{r.code}</TableCell>
+                <TableCell className="font-mono text-[var(--accent)]">
+                  {r.code}
+                </TableCell>
                 <TableCell>{r.name}</TableCell>
-                <TableCell className="text-xs text-[var(--muted)]">{r.email}</TableCell>
-                <TableCell className="font-mono">{r.referrals_count || 0}</TableCell>
+                <TableCell className="text-xs text-[var(--muted)]">
+                  {r.email}
+                </TableCell>
+                <TableCell className="font-mono">
+                  {r.referrals_count || 0}
+                </TableCell>
                 <TableCell className="font-mono">₹{r.earnings || 0}</TableCell>
                 <TableCell className="text-xs text-[var(--muted-2)]">
                   {r.created_at?.slice(0, 10)}
                 </TableCell>
                 <TableCell className="text-right">
-                  <ConfirmDeleteButton onDelete={() => del(r.id)} ariaLabel="Delete referral" />
+                  <ConfirmDeleteButton
+                    onDelete={() => del(r.id)}
+                    ariaLabel="Delete referral"
+                  />
                 </TableCell>
               </TableRow>
             ))}
@@ -3111,7 +3540,11 @@ export function AdminReferrals() {
 
 // ===== Admin Trader League =====
 export function AdminLeague() {
-  const [config, setConfig] = useState({ enabled: false, fee_existing: 999, fee_new: 1499 });
+  const [config, setConfig] = useState({
+    enabled: false,
+    fee_existing: 999,
+    fee_new: 1499,
+  });
   const [rows, setRows] = useState([]);
   const load = async () => {
     try {
@@ -3128,10 +3561,16 @@ export function AdminLeague() {
   }, []);
   const toggle = async () => {
     try {
-      const { data } = await api.put("/league/config", { enabled: !config.enabled });
+      const { data } = await api.put("/league/config", {
+        enabled: !config.enabled,
+      });
       setConfig({ ...config, enabled: data.enabled });
       broadcastSync("league");
-      toast.success(data.enabled ? "Registration is now OPEN" : "Registration is now CLOSED");
+      toast.success(
+        data.enabled
+          ? "Registration is now OPEN"
+          : "Registration is now CLOSED",
+      );
     } catch (e) {
       toast.error(formatApiError(e.response?.data?.detail));
     }
@@ -3142,14 +3581,31 @@ export function AdminLeague() {
       toast.success("Deleted");
       load();
     } catch (e) {
-      toast.error(formatApiError(e.response?.data?.detail, "Could not delete registration"));
+      toast.error(
+        formatApiError(
+          e.response?.data?.detail,
+          "Could not delete registration",
+        ),
+      );
     }
   };
   const statusBadge = (s) => {
     const map = {
-      pending_payment: { bg: "rgba(245,182,56,0.15)", text: "#ffd166", label: "Pending" },
-      completed: { bg: "rgba(41,211,154,0.15)", text: "#29d39a", label: "Paid" },
-      rejected: { bg: "rgba(255,85,116,0.15)", text: "#ff5574", label: "Rejected" },
+      pending_payment: {
+        bg: "rgba(245,182,56,0.15)",
+        text: "#ffd166",
+        label: "Pending",
+      },
+      completed: {
+        bg: "rgba(41,211,154,0.15)",
+        text: "#29d39a",
+        label: "Paid",
+      },
+      rejected: {
+        bg: "rgba(255,85,116,0.15)",
+        text: "#ff5574",
+        label: "Rejected",
+      },
     };
     const m = map[s] || map["pending_payment"];
     return (
@@ -3197,24 +3653,31 @@ export function AdminLeague() {
             </button>
           </div>
           <p className="text-[11px] text-[var(--muted-2)] mt-3 leading-relaxed">
-            Turn OFF to hide the /league page and reject new sign-ups. Existing registrations remain
-            intact.
+            Turn OFF to hide the /league page and reject new sign-ups. Existing
+            registrations remain intact.
           </p>
         </div>
         <div className="card-panel p-5">
           <div className="text-xs uppercase tracking-widest font-mono text-[var(--muted-2)]">
             Paid Registrations
           </div>
-          <div className="font-display text-4xl mt-3 text-[var(--accent)]">{paidCount}</div>
-          <div className="text-[11px] text-[var(--muted-2)] mt-2">out of {rows.length} total</div>
+          <div className="font-display text-4xl mt-3 text-[var(--accent)]">
+            {paidCount}
+          </div>
+          <div className="text-[11px] text-[var(--muted-2)] mt-2">
+            out of {rows.length} total
+          </div>
         </div>
         <div className="card-panel p-5">
           <div className="text-xs uppercase tracking-widest font-mono text-[var(--muted-2)]">
             Revenue Collected
           </div>
-          <div className="font-display text-4xl mt-3">{formatINR(totalRevenue)}</div>
+          <div className="font-display text-4xl mt-3">
+            {formatINR(totalRevenue)}
+          </div>
           <div className="text-[11px] text-[var(--muted-2)] mt-2">
-            Existing {formatINR(config.fee_existing)} · New {formatINR(config.fee_new)}
+            Existing {formatINR(config.fee_existing)} · New{" "}
+            {formatINR(config.fee_new)}
           </div>
         </div>
       </div>
@@ -3242,14 +3705,18 @@ export function AdminLeague() {
                 <TableCell>
                   <div>{r.full_name}</div>
                   <div className="text-xs text-[var(--muted-2)]">{r.email}</div>
-                  <div className="text-xs text-[var(--muted-2)] font-mono">{r.phone}</div>
+                  <div className="text-xs text-[var(--muted-2)] font-mono">
+                    {r.phone}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <span className="text-xs font-mono uppercase tracking-wider">
                     {r.is_existing_trader ? "Existing" : "New"}
                   </span>
                 </TableCell>
-                <TableCell className="font-mono text-xs">{r.trader_id || "—"}</TableCell>
+                <TableCell className="font-mono text-xs">
+                  {r.trader_id || "—"}
+                </TableCell>
                 <TableCell className="text-[var(--accent)] font-mono">
                   {formatINR(r.amount)}
                 </TableCell>
@@ -3268,7 +3735,10 @@ export function AdminLeague() {
             ))}
             {!rows.length && (
               <TableRow className="border-[var(--border)]">
-                <TableCell colSpan={7} className="text-center text-[var(--muted)] py-8">
+                <TableCell
+                  colSpan={7}
+                  className="text-center text-[var(--muted)] py-8"
+                >
                   No registrations yet.
                 </TableCell>
               </TableRow>
@@ -3395,14 +3865,20 @@ export function AdminUsers() {
       );
       setClassicPlans(sortedPlans);
     } catch (err) {
-      toast.error(formatApiError(err?.response?.data?.detail, "Failed to load traders"));
+      toast.error(
+        formatApiError(err?.response?.data?.detail, "Failed to load traders"),
+      );
     }
   };
   useEffect(() => {
     load();
   }, []);
 
-  const openManageFunds = async (u, initialTab = "credit", focusAccountId = "") => {
+  const openManageFunds = async (
+    u,
+    initialTab = "credit",
+    focusAccountId = "",
+  ) => {
     setFundingUser(u);
     setTab(initialTab);
     setEditingAcctId("");
@@ -3424,7 +3900,8 @@ export function AdminUsers() {
       amount: 50000,
       note: "",
     });
-    const initAcct = previewAccounts.find((a) => a.id === firstAcctId) || previewAccounts[0];
+    const initAcct =
+      previewAccounts.find((a) => a.id === firstAcctId) || previewAccounts[0];
     if (initAcct) syncEvalFormFromAccount(initAcct);
     setLedgerLoading(true);
     try {
@@ -3443,13 +3920,20 @@ export function AdminUsers() {
         setFundingUser(res.data.user);
         setKycNote(res.data.user.kyc?.admin_note || "");
       }
-      const chosen = accts.find((a) => a.id === (focusAccountId || accts[0]?.id)) || accts[0];
+      const chosen =
+        accts.find((a) => a.id === (focusAccountId || accts[0]?.id)) ||
+        accts[0];
       if (chosen?.id) {
         setFundForm((cur) => ({ ...cur, account_id: chosen.id }));
         syncEvalFormFromAccount(chosen);
       }
     } catch (err) {
-      toast.error(formatApiError(err?.response?.data?.detail, "Could not load trader details"));
+      toast.error(
+        formatApiError(
+          err?.response?.data?.detail,
+          "Could not load trader details",
+        ),
+      );
     } finally {
       setLedgerLoading(false);
     }
@@ -3469,7 +3953,10 @@ export function AdminUsers() {
     });
     if (res.data?.user) setFundingUser(res.data.user);
     if (accts[0]?.id) {
-      setFundForm((cur) => ({ ...cur, account_id: cur.account_id || accts[0].id }));
+      setFundForm((cur) => ({
+        ...cur,
+        account_id: cur.account_id || accts[0].id,
+      }));
     }
     await load();
   };
@@ -3495,7 +3982,9 @@ export function AdminUsers() {
       setFundForm((cur) => ({ ...cur, note: "" }));
       await refreshLedger(fundingUser.id);
     } catch (err) {
-      toast.error(formatApiError(err?.response?.data?.detail, "Failed to update balance"));
+      toast.error(
+        formatApiError(err?.response?.data?.detail, "Failed to update balance"),
+      );
     } finally {
       setSaving(false);
     }
@@ -3530,7 +4019,9 @@ export function AdminUsers() {
       }
       await refreshLedger(fundingUser.id);
     } catch (err) {
-      toast.error(formatApiError(err?.response?.data?.detail, "Failed to create account"));
+      toast.error(
+        formatApiError(err?.response?.data?.detail, "Failed to create account"),
+      );
     } finally {
       setSaving(false);
     }
@@ -3545,12 +4036,19 @@ export function AdminUsers() {
     }
     setSaving(true);
     try {
-      await api.post(`/admin/users/${fundingUser.id}/password`, { password: newPasswordInput });
+      await api.post(`/admin/users/${fundingUser.id}/password`, {
+        password: newPasswordInput,
+      });
       toast.success(`Login password updated for ${fundingUser.email}`);
       setNewPasswordInput("");
       await refreshLedger(fundingUser.id);
     } catch (err) {
-      toast.error(formatApiError(err?.response?.data?.detail, "Failed to update password"));
+      toast.error(
+        formatApiError(
+          err?.response?.data?.detail,
+          "Failed to update password",
+        ),
+      );
     } finally {
       setSaving(false);
     }
@@ -3585,7 +4083,12 @@ export function AdminUsers() {
       toast.success("Account evaluation & risk rules updated");
       await refreshLedger(fundingUser.id);
     } catch (err) {
-      toast.error(formatApiError(err?.response?.data?.detail, "Failed to update account rules"));
+      toast.error(
+        formatApiError(
+          err?.response?.data?.detail,
+          "Failed to update account rules",
+        ),
+      );
     } finally {
       setSaving(false);
     }
@@ -3595,11 +4098,16 @@ export function AdminUsers() {
     if (!fundingUser) return;
     setSaving(true);
     try {
-      await api.patch(`/admin/users/${fundingUser.id}/kyc`, { status, note: kycNote });
+      await api.patch(`/admin/users/${fundingUser.id}/kyc`, {
+        status,
+        note: kycNote,
+      });
       toast.success(`KYC marked ${status}`);
       await refreshLedger(fundingUser.id);
     } catch (err) {
-      toast.error(formatApiError(err?.response?.data?.detail, "Failed to update KYC"));
+      toast.error(
+        formatApiError(err?.response?.data?.detail, "Failed to update KYC"),
+      );
     } finally {
       setSaving(false);
     }
@@ -3632,7 +4140,9 @@ export function AdminUsers() {
       setEditingAcctId("");
       await refreshLedger(fundingUser.id);
     } catch (err) {
-      toast.error(formatApiError(err?.response?.data?.detail, "Failed to update account"));
+      toast.error(
+        formatApiError(err?.response?.data?.detail, "Failed to update account"),
+      );
     } finally {
       setSaving(false);
     }
@@ -3645,7 +4155,9 @@ export function AdminUsers() {
       toast.success("Account reset to starting capital");
       await refreshLedger(fundingUser.id);
     } catch (err) {
-      toast.error(formatApiError(err?.response?.data?.detail, "Failed to reset account"));
+      toast.error(
+        formatApiError(err?.response?.data?.detail, "Failed to reset account"),
+      );
     } finally {
       setSaving(false);
     }
@@ -3654,11 +4166,18 @@ export function AdminUsers() {
   const squareOffPosition = async (pos) => {
     setSaving(true);
     try {
-      await api.post(`/admin/accounts/${pos.account_id}/positions/${pos.id}/close`);
+      await api.post(
+        `/admin/accounts/${pos.account_id}/positions/${pos.id}/close`,
+      );
       toast.success(`Squared off ${pos.symbol}`);
       await refreshLedger(fundingUser.id);
     } catch (err) {
-      toast.error(formatApiError(err?.response?.data?.detail, "Could not square off position"));
+      toast.error(
+        formatApiError(
+          err?.response?.data?.detail,
+          "Could not square off position",
+        ),
+      );
     } finally {
       setSaving(false);
     }
@@ -3667,13 +4186,22 @@ export function AdminUsers() {
   const sendWelcomeToUser = async (u) => {
     setSendingWelcomeId(u.id);
     try {
-      const { data } = await api.post(`/admin/users/${u.id}/send-welcome`, undefined, {
-        timeout: 30000,
-      });
+      const { data } = await api.post(
+        `/admin/users/${u.id}/send-welcome`,
+        undefined,
+        {
+          timeout: 30000,
+        },
+      );
       toast.success(`Welcome email sent to ${data?.to || u.email}`);
       load();
     } catch (err) {
-      toast.error(formatApiError(err?.response?.data?.detail || err?.message, "Failed to send welcome email"));
+      toast.error(
+        formatApiError(
+          err?.response?.data?.detail || err?.message,
+          "Failed to send welcome email",
+        ),
+      );
     } finally {
       setSendingWelcomeId("");
     }
@@ -3686,7 +4214,9 @@ export function AdminUsers() {
       toast.success("Trader removed — email can register again cleanly");
       load();
     } catch (err) {
-      toast.error(formatApiError(err?.response?.data?.detail, "Could not delete trader"));
+      toast.error(
+        formatApiError(err?.response?.data?.detail, "Could not delete trader"),
+      );
     }
   };
 
@@ -3766,9 +4296,13 @@ export function AdminUsers() {
     );
   };
 
-  const totalCombinedBalance = rows.reduce((s, u) => s + Number(u.total_balance || 0), 0);
+  const totalCombinedBalance = rows.reduce(
+    (s, u) => s + Number(u.total_balance || 0),
+    0,
+  );
   const kycSubmittedOrVerified = rows.filter(
-    (u) => u.kyc?.submitted_at || ["Submitted", "Verified"].includes(u.kyc?.status),
+    (u) =>
+      u.kyc?.submitted_at || ["Submitted", "Verified"].includes(u.kyc?.status),
   ).length;
 
   return (
@@ -3782,8 +4316,9 @@ export function AdminUsers() {
             Traders ({rows.length}) &amp; Accounts ({allAccounts.length})
           </h1>
           <p className="text-sm text-[var(--muted)] mt-2">
-            Inspect any trader's accounts, verify KYC, credit or debit balances, override risk
-            rules, reset challenges, and square off open positions.
+            Inspect any trader's accounts, verify KYC, credit or debit balances,
+            override risk rules, reset challenges, and square off open
+            positions.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
@@ -3841,7 +4376,9 @@ export function AdminUsers() {
           <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--muted-2)]">
             Trading Accounts
           </div>
-          <div className="font-display text-2xl mt-1 text-white">{allAccounts.length}</div>
+          <div className="font-display text-2xl mt-1 text-white">
+            {allAccounts.length}
+          </div>
         </div>
         <div className="card-panel p-4">
           <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--muted-2)]">
@@ -3893,7 +4430,9 @@ export function AdminUsers() {
                   </TableCell>
                   <TableCell>
                     <div className="font-mono text-xs">{u.email}</div>
-                    <div className="font-mono text-xs text-[var(--muted-2)]">{u.phone || "—"}</div>
+                    <div className="font-mono text-xs text-[var(--muted-2)]">
+                      {u.phone || "—"}
+                    </div>
                     <div className="mt-1">
                       {u.welcome_sent_at ? (
                         <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-[var(--accent)]/15 text-[var(--accent)]">
@@ -3907,7 +4446,9 @@ export function AdminUsers() {
                     </div>
                   </TableCell>
                   <TableCell className="tabular-nums">
-                    <div className="text-xs font-mono">{u.accounts?.length || 0} active</div>
+                    <div className="text-xs font-mono">
+                      {u.accounts?.length || 0} active
+                    </div>
                     {u.funded_accounts_count > 0 && (
                       <div className="text-[10px] font-mono text-[var(--emerald)]">
                         {u.funded_accounts_count} Funded
@@ -3931,12 +4472,18 @@ export function AdminUsers() {
                             : "bg-white/10 text-[var(--muted-2)]"
                         }`}
                       >
-                        {u.auth_provider === "google" || u.firebase_uid ? "Google" : "Email"}
+                        {u.auth_provider === "google" || u.firebase_uid
+                          ? "Google"
+                          : "Email"}
                       </span>
-                      <span className="truncate max-w-[155px]">{u.username || u.email}</span>
+                      <span className="truncate max-w-[155px]">
+                        {u.username || u.email}
+                      </span>
                       <button
                         type="button"
-                        onClick={() => copyCredential(u.username || u.email, "Username")}
+                        onClick={() =>
+                          copyCredential(u.username || u.email, "Username")
+                        }
                         className="text-[var(--muted-2)] hover:text-white"
                         title="Copy website username"
                       >
@@ -3956,7 +4503,9 @@ export function AdminUsers() {
                       {u.login_password && (
                         <button
                           type="button"
-                          onClick={() => copyCredential(u.login_password, "Password")}
+                          onClick={() =>
+                            copyCredential(u.login_password, "Password")
+                          }
                           className="text-[var(--muted-2)] hover:text-white"
                           title="Copy website password"
                         >
@@ -4036,8 +4585,13 @@ export function AdminUsers() {
               ))}
               {!filteredUsers.length && (
                 <TableRow className="border-[var(--border)]">
-                  <TableCell colSpan={7} className="text-center text-[var(--muted)] py-8">
-                    {rows.length ? "No matching traders found." : "No users signed up yet."}
+                  <TableCell
+                    colSpan={7}
+                    className="text-center text-[var(--muted)] py-8"
+                  >
+                    {rows.length
+                      ? "No matching traders found."
+                      : "No users signed up yet."}
                   </TableCell>
                 </TableRow>
               )}
@@ -4077,7 +4631,9 @@ export function AdminUsers() {
                       {a.account_number || a.id}
                     </TableCell>
                     <TableCell>
-                      <div className="text-xs font-medium text-white">{a.user_name || "—"}</div>
+                      <div className="text-xs font-medium text-white">
+                        {a.user_name || "—"}
+                      </div>
                       <div className="text-[11px] font-mono text-[var(--muted-2)]">
                         {a.user_email || a.user_id}
                       </div>
@@ -4125,7 +4681,10 @@ export function AdminUsers() {
               })}
               {!filteredAccounts.length && (
                 <TableRow className="border-[var(--border)]">
-                  <TableCell colSpan={8} className="text-center text-[var(--muted)] py-8">
+                  <TableCell
+                    colSpan={8}
+                    className="text-center text-[var(--muted)] py-8"
+                  >
                     No trading accounts found.
                   </TableCell>
                 </TableRow>
@@ -4135,7 +4694,10 @@ export function AdminUsers() {
         </div>
       )}
 
-      <Dialog open={!!fundingUser} onOpenChange={(o) => !o && setFundingUser(null)}>
+      <Dialog
+        open={!!fundingUser}
+        onOpenChange={(o) => !o && setFundingUser(null)}
+      >
         <DialogContent className="bg-[var(--bg-2)] border-[var(--border)] text-white max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl">
@@ -4182,8 +4744,9 @@ export function AdminUsers() {
                   onClick={() => {
                     setTab("eval");
                     const target =
-                      ledger.accounts.find((a) => a.id === evalForm.account_id) ||
-                      ledger.accounts[0];
+                      ledger.accounts.find(
+                        (a) => a.id === evalForm.account_id,
+                      ) || ledger.accounts[0];
                     if (target) syncEvalFormFromAccount(target);
                   }}
                 >
@@ -4215,7 +4778,8 @@ export function AdminUsers() {
                       </div>
                       <div className="text-[10px] font-mono text-[var(--muted-2)] mt-1">
                         Auth:{" "}
-                        {fundingUser.auth_provider === "google" || fundingUser.firebase_uid
+                        {fundingUser.auth_provider === "google" ||
+                        fundingUser.firebase_uid
                           ? "Google Account"
                           : "Email + Password"}
                       </div>
@@ -4230,7 +4794,8 @@ export function AdminUsers() {
                             ? showPasswords
                               ? fundingUser.login_password
                               : "••••••••"
-                            : fundingUser.auth_provider === "google" || fundingUser.firebase_uid
+                            : fundingUser.auth_provider === "google" ||
+                                fundingUser.firebase_uid
                               ? "Google Sign-In"
                               : "Not captured yet"}
                         </span>
@@ -4238,7 +4803,10 @@ export function AdminUsers() {
                           <button
                             type="button"
                             onClick={() =>
-                              copyCredential(fundingUser.login_password, "Website Password")
+                              copyCredential(
+                                fundingUser.login_password,
+                                "Website Password",
+                              )
                             }
                             className="text-[var(--muted-2)] hover:text-white shrink-0"
                           >
@@ -4251,7 +4819,9 @@ export function AdminUsers() {
                       <span className="text-[10px] font-mono uppercase text-[var(--muted-2)]">
                         Phone
                       </span>
-                      <div className="font-mono text-white mt-0.5">{fundingUser.phone || "—"}</div>
+                      <div className="font-mono text-white mt-0.5">
+                        {fundingUser.phone || "—"}
+                      </div>
                     </div>
                     <div>
                       <span className="text-[10px] font-mono uppercase text-[var(--muted-2)]">
@@ -4294,32 +4864,52 @@ export function AdminUsers() {
                     </div>
                     <div className="grid sm:grid-cols-3 gap-3 text-xs">
                       <div>
-                        <span className="text-[10px] text-[var(--muted-2)]">PAN</span>
-                        <div className="font-mono text-white">{fundingUser.kyc?.pan || "—"}</div>
+                        <span className="text-[10px] text-[var(--muted-2)]">
+                          PAN
+                        </span>
+                        <div className="font-mono text-white">
+                          {fundingUser.kyc?.pan || "—"}
+                        </div>
                       </div>
                       <div>
-                        <span className="text-[10px] text-[var(--muted-2)]">Aadhaar</span>
+                        <span className="text-[10px] text-[var(--muted-2)]">
+                          Aadhaar
+                        </span>
                         <div className="font-mono text-white">
                           {fundingUser.kyc?.aadhaar || "—"}
                         </div>
                       </div>
                       <div>
-                        <span className="text-[10px] text-[var(--muted-2)]">UPI ID</span>
-                        <div className="font-mono text-white">{fundingUser.kyc?.upi || "—"}</div>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-[var(--muted-2)]">Bank Holder</span>
-                        <div className="text-white">{fundingUser.kyc?.bank_holder || "—"}</div>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-[var(--muted-2)]">Bank / IFSC</span>
+                        <span className="text-[10px] text-[var(--muted-2)]">
+                          UPI ID
+                        </span>
                         <div className="font-mono text-white">
-                          {fundingUser.kyc?.bank_name || "—"}{" "}
-                          {fundingUser.kyc?.ifsc ? `(${fundingUser.kyc.ifsc})` : ""}
+                          {fundingUser.kyc?.upi || "—"}
                         </div>
                       </div>
                       <div>
-                        <span className="text-[10px] text-[var(--muted-2)]">Bank Account</span>
+                        <span className="text-[10px] text-[var(--muted-2)]">
+                          Bank Holder
+                        </span>
+                        <div className="text-white">
+                          {fundingUser.kyc?.bank_holder || "—"}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-[var(--muted-2)]">
+                          Bank / IFSC
+                        </span>
+                        <div className="font-mono text-white">
+                          {fundingUser.kyc?.bank_name || "—"}{" "}
+                          {fundingUser.kyc?.ifsc
+                            ? `(${fundingUser.kyc.ifsc})`
+                            : ""}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-[var(--muted-2)]">
+                          Bank Account
+                        </span>
                         <div className="font-mono text-white">
                           {fundingUser.kyc?.bank_account || "—"}
                         </div>
@@ -4365,7 +4955,9 @@ export function AdminUsers() {
                             className="p-2.5 flex items-center justify-between text-xs"
                           >
                             <div>
-                              <div className="font-medium text-white">{o.plan_name}</div>
+                              <div className="font-medium text-white">
+                                {o.plan_name}
+                              </div>
                               <div className="text-[10px] font-mono text-[var(--muted-2)]">
                                 {o.id} · UTR: {o.utr || "—"}
                               </div>
@@ -4433,24 +5025,32 @@ export function AdminUsers() {
                           </div>
                           <div className="grid grid-cols-3 gap-2 text-[11px]">
                             <div>
-                              <span className="text-[var(--muted-2)]">Balance:</span>{" "}
+                              <span className="text-[var(--muted-2)]">
+                                Balance:
+                              </span>{" "}
                               <strong className="text-[var(--accent)] font-mono">
                                 {formatINR(a.balance || 0)}
                               </strong>
                             </div>
                             <div>
-                              <span className="text-[var(--muted-2)]">Capital:</span>{" "}
+                              <span className="text-[var(--muted-2)]">
+                                Capital:
+                              </span>{" "}
                               <strong className="text-white font-mono">
                                 {formatINR(a.starting_capital || 0)}
                               </strong>
                             </div>
                             <div>
-                              <span className="text-[var(--muted-2)]">Realized P&amp;L:</span>{" "}
+                              <span className="text-[var(--muted-2)]">
+                                Realized P&amp;L:
+                              </span>{" "}
                               <strong
                                 className={`font-mono ${Number(a.realized_pnl || 0) >= 0 ? "text-[var(--emerald)]" : "text-[var(--rose)]"}`}
                               >
                                 {Number(a.realized_pnl || 0) >= 0 ? "+" : "−"}
-                                {formatINR(Math.abs(Number(a.realized_pnl || 0)))}
+                                {formatINR(
+                                  Math.abs(Number(a.realized_pnl || 0)),
+                                )}
                               </strong>
                             </div>
                           </div>
@@ -4462,21 +5062,30 @@ export function AdminUsers() {
                                 <select
                                   value={acctEditForm.status}
                                   onChange={(e) =>
-                                    setAcctEditForm({ ...acctEditForm, status: e.target.value })
+                                    setAcctEditForm({
+                                      ...acctEditForm,
+                                      status: e.target.value,
+                                    })
                                   }
                                   className="input-dark mt-1 text-xs"
                                 >
-                                  {["Active", "Funded", "Passed", "Completed", "Failed"].map(
-                                    (st) => (
-                                      <option key={st} value={st}>
-                                        {st}
-                                      </option>
-                                    ),
-                                  )}
+                                  {[
+                                    "Active",
+                                    "Funded",
+                                    "Passed",
+                                    "Completed",
+                                    "Failed",
+                                  ].map((st) => (
+                                    <option key={st} value={st}>
+                                      {st}
+                                    </option>
+                                  ))}
                                 </select>
                               </div>
                               <div>
-                                <Label className="text-[11px]">Account Type</Label>
+                                <Label className="text-[11px]">
+                                  Account Type
+                                </Label>
                                 <select
                                   value={acctEditForm.account_type}
                                   onChange={(e) =>
@@ -4499,13 +5108,18 @@ export function AdminUsers() {
                                 <Input
                                   value={acctEditForm.plan_name}
                                   onChange={(e) =>
-                                    setAcctEditForm({ ...acctEditForm, plan_name: e.target.value })
+                                    setAcctEditForm({
+                                      ...acctEditForm,
+                                      plan_name: e.target.value,
+                                    })
                                   }
                                   className="bg-[var(--bg-2)] border-[var(--border-hi)] mt-1 text-xs"
                                 />
                               </div>
                               <div>
-                                <Label className="text-[11px]">Starting Capital (₹)</Label>
+                                <Label className="text-[11px]">
+                                  Starting Capital (₹)
+                                </Label>
                                 <Input
                                   type="number"
                                   value={acctEditForm.starting_capital}
@@ -4519,12 +5133,17 @@ export function AdminUsers() {
                                 />
                               </div>
                               <div>
-                                <Label className="text-[11px]">Balance (₹)</Label>
+                                <Label className="text-[11px]">
+                                  Balance (₹)
+                                </Label>
                                 <Input
                                   type="number"
                                   value={acctEditForm.balance}
                                   onChange={(e) =>
-                                    setAcctEditForm({ ...acctEditForm, balance: +e.target.value })
+                                    setAcctEditForm({
+                                      ...acctEditForm,
+                                      balance: +e.target.value,
+                                    })
                                   }
                                   className="bg-[var(--bg-2)] border-[var(--border-hi)] mt-1 text-xs font-mono"
                                   data-testid={`admin-edit-balance-input-${a.id}`}
@@ -4561,8 +5180,8 @@ export function AdminUsers() {
 
                   <div>
                     <div className="text-xs uppercase tracking-wider font-mono text-[var(--muted-2)] mb-2 flex items-center gap-1.5">
-                      <Activity size={12} className="text-[var(--accent)]" /> Open Positions (
-                      {ledger.virtual_positions?.length || 0})
+                      <Activity size={12} className="text-[var(--accent)]" />{" "}
+                      Open Positions ({ledger.virtual_positions?.length || 0})
                     </div>
                     {ledger.virtual_positions?.length ? (
                       <div className="rounded-xl border border-[var(--border)] divide-y divide-[var(--border)] bg-[var(--bg-1)]">
@@ -4576,7 +5195,8 @@ export function AdminUsers() {
                                 {pos.symbol}
                               </span>{" "}
                               <span className="text-[11px] font-mono text-[var(--muted)]">
-                                {pos.side} · Qty {pos.qty} @ {formatINR(pos.avg || 0)}
+                                {pos.side} · Qty {pos.qty} @{" "}
+                                {formatINR(pos.avg || 0)}
                               </span>
                             </div>
                             <button
@@ -4592,19 +5212,24 @@ export function AdminUsers() {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-xs text-[var(--muted)]">No open positions.</div>
+                      <div className="text-xs text-[var(--muted)]">
+                        No open positions.
+                      </div>
                     )}
                   </div>
 
                   <div>
                     <div className="text-xs uppercase tracking-wider font-mono text-[var(--muted-2)] mb-2">
-                      Recent Trades ({ledger.virtual_trades?.length || 0}) &amp; Orders (
-                      {ledger.virtual_orders?.length || 0})
+                      Recent Trades ({ledger.virtual_trades?.length || 0}) &amp;
+                      Orders ({ledger.virtual_orders?.length || 0})
                     </div>
                     {ledger.virtual_trades?.length ? (
                       <div className="max-h-36 overflow-y-auto rounded-xl border border-[var(--border)] divide-y divide-[var(--border)] bg-[var(--bg-1)]">
                         {ledger.virtual_trades.slice(0, 20).map((t) => (
-                          <div key={t.id} className="p-2 flex items-center justify-between text-xs">
+                          <div
+                            key={t.id}
+                            className="p-2 flex items-center justify-between text-xs"
+                          >
                             <span className="font-mono text-white">
                               {t.symbol} · {t.side} {t.qty}
                             </span>
@@ -4618,7 +5243,9 @@ export function AdminUsers() {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-xs text-[var(--muted)]">No closed trades recorded.</div>
+                      <div className="text-xs text-[var(--muted)]">
+                        No closed trades recorded.
+                      </div>
                     )}
                   </div>
                 </div>
@@ -4631,7 +5258,12 @@ export function AdminUsers() {
                       <Label>Target Account</Label>
                       <select
                         value={fundForm.account_id}
-                        onChange={(e) => setFundForm({ ...fundForm, account_id: e.target.value })}
+                        onChange={(e) =>
+                          setFundForm({
+                            ...fundForm,
+                            account_id: e.target.value,
+                          })
+                        }
                         className="input-dark mt-2 text-xs font-mono"
                       >
                         {!ledger.accounts.length && (
@@ -4639,7 +5271,8 @@ export function AdminUsers() {
                         )}
                         {ledger.accounts.map((a) => (
                           <option key={a.id} value={a.id}>
-                            {a.account_number || a.id} · {a.plan_name} ({formatINR(a.balance)})
+                            {a.account_number || a.id} · {a.plan_name} (
+                            {formatINR(a.balance)})
                           </option>
                         ))}
                       </select>
@@ -4650,14 +5283,18 @@ export function AdminUsers() {
                         <button
                           type="button"
                           className={`flex-1 ${fundForm.type === "credit" ? "is-buy" : ""}`}
-                          onClick={() => setFundForm({ ...fundForm, type: "credit" })}
+                          onClick={() =>
+                            setFundForm({ ...fundForm, type: "credit" })
+                          }
                         >
                           Credit (+)
                         </button>
                         <button
                           type="button"
                           className={`flex-1 ${fundForm.type === "debit" ? "is-sell" : ""}`}
-                          onClick={() => setFundForm({ ...fundForm, type: "debit" })}
+                          onClick={() =>
+                            setFundForm({ ...fundForm, type: "debit" })
+                          }
                         >
                           Debit (−)
                         </button>
@@ -4672,7 +5309,9 @@ export function AdminUsers() {
                         <button
                           key={amt}
                           type="button"
-                          onClick={() => setFundForm({ ...fundForm, amount: amt })}
+                          onClick={() =>
+                            setFundForm({ ...fundForm, amount: amt })
+                          }
                           className={`px-3 py-1.5 rounded-full text-xs font-mono border transition ${
                             Number(fundForm.amount) === amt
                               ? "border-[var(--accent)] bg-[var(--accent)] text-white"
@@ -4693,7 +5332,9 @@ export function AdminUsers() {
                         min="1"
                         step="1"
                         value={fundForm.amount}
-                        onChange={(e) => setFundForm({ ...fundForm, amount: +e.target.value })}
+                        onChange={(e) =>
+                          setFundForm({ ...fundForm, amount: +e.target.value })
+                        }
                         className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2 font-mono"
                         data-testid="admin-fund-amount"
                       />
@@ -4702,7 +5343,9 @@ export function AdminUsers() {
                       <Label>Reason / Reference Note</Label>
                       <Input
                         value={fundForm.note}
-                        onChange={(e) => setFundForm({ ...fundForm, note: e.target.value })}
+                        onChange={(e) =>
+                          setFundForm({ ...fundForm, note: e.target.value })
+                        }
                         className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                         placeholder="e.g. Challenge bonus top-up"
                         data-testid="admin-fund-note"
@@ -4726,11 +5369,19 @@ export function AdminUsers() {
               ) : tab === "create" ? (
                 <form onSubmit={submitNewAccount} className="space-y-4">
                   <div>
-                    <Label>Product Track (IndiFunded Challenge Prioritized)</Label>
+                    <Label>
+                      Product Track (IndiFunded Challenge Prioritized)
+                    </Label>
                     <div className="seg w-full mt-2">
                       {[
-                        { id: PRODUCT_TYPES.CLASSIC, label: "IndiFunded Challenge" },
-                        { id: PRODUCT_TYPES.ONE_STEP, label: "1-Step Challenge" },
+                        {
+                          id: PRODUCT_TYPES.CLASSIC,
+                          label: "IndiFunded Challenge",
+                        },
+                        {
+                          id: PRODUCT_TYPES.ONE_STEP,
+                          label: "1-Step Challenge",
+                        },
                         { id: PRODUCT_TYPES.INSTANT, label: "Instant Funding" },
                       ].map((pt) => (
                         <button
@@ -4778,7 +5429,9 @@ export function AdminUsers() {
                                 account_type: "Challenge",
                                 plan_id: p0?.id || "",
                                 plan_name: p0?.name || "Standard",
-                                starting_capital: Number(p0?.account_size || 100000),
+                                starting_capital: Number(
+                                  p0?.account_size || 100000,
+                                ),
                                 profit_target_pct: 8,
                                 daily_loss_limit_pct: 5,
                                 max_loss_limit: 20,
@@ -4796,34 +5449,37 @@ export function AdminUsers() {
                     </div>
                   </div>
 
-                  {acctForm.product_type === PRODUCT_TYPES.CLASSIC && classicPlans.length > 0 && (
-                    <div>
-                      <Label>IndiFunded Challenge Plans</Label>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {classicPlans.map((pl) => (
-                          <button
-                            key={pl.id}
-                            type="button"
-                            onClick={() =>
-                              setAcctForm({
-                                ...acctForm,
-                                plan_id: pl.id,
-                                plan_name: pl.name,
-                                starting_capital: Number(pl.account_size || 100000),
-                              })
-                            }
-                            className={`px-3 py-1.5 rounded-full text-xs font-mono border transition ${
-                              acctForm.plan_id === pl.id
-                                ? "border-[var(--accent)] bg-[var(--accent)] text-white"
-                                : "border-[var(--border-hi)] text-[var(--muted)] hover:text-white"
-                            }`}
-                          >
-                            {pl.name} ({formatINR(pl.account_size)})
-                          </button>
-                        ))}
+                  {acctForm.product_type === PRODUCT_TYPES.CLASSIC &&
+                    classicPlans.length > 0 && (
+                      <div>
+                        <Label>IndiFunded Challenge Plans</Label>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {classicPlans.map((pl) => (
+                            <button
+                              key={pl.id}
+                              type="button"
+                              onClick={() =>
+                                setAcctForm({
+                                  ...acctForm,
+                                  plan_id: pl.id,
+                                  plan_name: pl.name,
+                                  starting_capital: Number(
+                                    pl.account_size || 100000,
+                                  ),
+                                })
+                              }
+                              className={`px-3 py-1.5 rounded-full text-xs font-mono border transition ${
+                                acctForm.plan_id === pl.id
+                                  ? "border-[var(--accent)] bg-[var(--accent)] text-white"
+                                  : "border-[var(--border-hi)] text-[var(--muted)] hover:text-white"
+                              }`}
+                            >
+                              {pl.name} ({formatINR(pl.account_size)})
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
                   <div className="grid sm:grid-cols-2 gap-3">
                     <div>
@@ -4850,7 +5506,12 @@ export function AdminUsers() {
                       <Label>Plan Name</Label>
                       <Input
                         value={acctForm.plan_name}
-                        onChange={(e) => setAcctForm({ ...acctForm, plan_name: e.target.value })}
+                        onChange={(e) =>
+                          setAcctForm({
+                            ...acctForm,
+                            plan_name: e.target.value,
+                          })
+                        }
                         className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                         placeholder="Starter / Standard / Pro / Elite"
                       />
@@ -4865,7 +5526,10 @@ export function AdminUsers() {
                         min="1000"
                         value={acctForm.starting_capital}
                         onChange={(e) =>
-                          setAcctForm({ ...acctForm, starting_capital: +e.target.value })
+                          setAcctForm({
+                            ...acctForm,
+                            starting_capital: +e.target.value,
+                          })
                         }
                         className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-1.5 font-mono text-xs"
                         data-testid="admin-acct-capital"
@@ -4879,7 +5543,10 @@ export function AdminUsers() {
                         min="0"
                         value={acctForm.profit_target_pct}
                         onChange={(e) =>
-                          setAcctForm({ ...acctForm, profit_target_pct: +e.target.value })
+                          setAcctForm({
+                            ...acctForm,
+                            profit_target_pct: +e.target.value,
+                          })
                         }
                         className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-1.5 font-mono text-xs"
                       />
@@ -4893,7 +5560,10 @@ export function AdminUsers() {
                         max="25"
                         value={acctForm.daily_loss_limit_pct}
                         onChange={(e) =>
-                          setAcctForm({ ...acctForm, daily_loss_limit_pct: +e.target.value })
+                          setAcctForm({
+                            ...acctForm,
+                            daily_loss_limit_pct: +e.target.value,
+                          })
                         }
                         className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-1.5 font-mono text-xs"
                       />
@@ -4906,7 +5576,10 @@ export function AdminUsers() {
                         max="50"
                         value={acctForm.max_loss_limit}
                         onChange={(e) =>
-                          setAcctForm({ ...acctForm, max_loss_limit: +e.target.value })
+                          setAcctForm({
+                            ...acctForm,
+                            max_loss_limit: +e.target.value,
+                          })
                         }
                         className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-1.5 font-mono text-xs"
                       />
@@ -4919,7 +5592,10 @@ export function AdminUsers() {
                         max="95"
                         value={acctForm.profit_split}
                         onChange={(e) =>
-                          setAcctForm({ ...acctForm, profit_split: +e.target.value })
+                          setAcctForm({
+                            ...acctForm,
+                            profit_split: +e.target.value,
+                          })
                         }
                         className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-1.5 font-mono text-xs"
                       />
@@ -4931,7 +5607,10 @@ export function AdminUsers() {
                         min="0"
                         value={acctForm.min_trading_days}
                         onChange={(e) =>
-                          setAcctForm({ ...acctForm, min_trading_days: +e.target.value })
+                          setAcctForm({
+                            ...acctForm,
+                            min_trading_days: +e.target.value,
+                          })
                         }
                         className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-1.5 font-mono text-xs"
                       />
@@ -4943,7 +5622,10 @@ export function AdminUsers() {
                         min="0"
                         value={acctForm.total_trading_days}
                         onChange={(e) =>
-                          setAcctForm({ ...acctForm, total_trading_days: +e.target.value })
+                          setAcctForm({
+                            ...acctForm,
+                            total_trading_days: +e.target.value,
+                          })
                         }
                         className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-1.5 font-mono text-xs"
                       />
@@ -4955,7 +5637,10 @@ export function AdminUsers() {
                         min="0"
                         value={acctForm.trades_per_day}
                         onChange={(e) =>
-                          setAcctForm({ ...acctForm, trades_per_day: +e.target.value })
+                          setAcctForm({
+                            ...acctForm,
+                            trades_per_day: +e.target.value,
+                          })
                         }
                         className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-1.5 font-mono text-xs"
                       />
@@ -4966,7 +5651,9 @@ export function AdminUsers() {
                     <Label>Provisioning Note</Label>
                     <Input
                       value={acctForm.note}
-                      onChange={(e) => setAcctForm({ ...acctForm, note: e.target.value })}
+                      onChange={(e) =>
+                        setAcctForm({ ...acctForm, note: e.target.value })
+                      }
                       className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                       placeholder="e.g. Challenge assigned after payment verification"
                     />
@@ -4992,7 +5679,8 @@ export function AdminUsers() {
                 <form onSubmit={submitEvalRisk} className="space-y-4">
                   {!ledger.accounts.length ? (
                     <div className="text-xs text-[var(--muted)] py-4">
-                      This trader has no accounts yet. Provision an account or credit funds first.
+                      This trader has no accounts yet. Provision an account or
+                      credit funds first.
                     </div>
                   ) : (
                     <>
@@ -5002,14 +5690,17 @@ export function AdminUsers() {
                           <select
                             value={evalForm.account_id}
                             onChange={(e) => {
-                              const found = ledger.accounts.find((a) => a.id === e.target.value);
+                              const found = ledger.accounts.find(
+                                (a) => a.id === e.target.value,
+                              );
                               if (found) syncEvalFormFromAccount(found);
                             }}
                             className="input-dark mt-2 text-xs font-mono"
                           >
                             {ledger.accounts.map((a) => (
                               <option key={a.id} value={a.id}>
-                                {a.account_number || a.id} · {a.plan_name} ({a.status})
+                                {a.account_number || a.id} · {a.plan_name} (
+                                {a.status})
                               </option>
                             ))}
                           </select>
@@ -5018,10 +5709,21 @@ export function AdminUsers() {
                           <Label>Account Status</Label>
                           <select
                             value={evalForm.status}
-                            onChange={(e) => setEvalForm({ ...evalForm, status: e.target.value })}
+                            onChange={(e) =>
+                              setEvalForm({
+                                ...evalForm,
+                                status: e.target.value,
+                              })
+                            }
                             className="input-dark mt-2 text-xs font-mono"
                           >
-                            {["Active", "Funded", "Passed", "Completed", "Failed"].map((st) => (
+                            {[
+                              "Active",
+                              "Funded",
+                              "Passed",
+                              "Completed",
+                              "Failed",
+                            ].map((st) => (
                               <option key={st} value={st}>
                                 {st}
                               </option>
@@ -5037,7 +5739,10 @@ export function AdminUsers() {
                             step="0.5"
                             value={evalForm.profit_target_pct}
                             onChange={(e) =>
-                              setEvalForm({ ...evalForm, profit_target_pct: +e.target.value })
+                              setEvalForm({
+                                ...evalForm,
+                                profit_target_pct: +e.target.value,
+                              })
                             }
                             className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2 font-mono"
                           />
@@ -5049,7 +5754,10 @@ export function AdminUsers() {
                             step="0.5"
                             value={evalForm.max_loss_limit}
                             onChange={(e) =>
-                              setEvalForm({ ...evalForm, max_loss_limit: +e.target.value })
+                              setEvalForm({
+                                ...evalForm,
+                                max_loss_limit: +e.target.value,
+                              })
                             }
                             className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2 font-mono"
                           />
@@ -5061,7 +5769,10 @@ export function AdminUsers() {
                             step="0.5"
                             value={evalForm.daily_loss_limit_pct}
                             onChange={(e) =>
-                              setEvalForm({ ...evalForm, daily_loss_limit_pct: +e.target.value })
+                              setEvalForm({
+                                ...evalForm,
+                                daily_loss_limit_pct: +e.target.value,
+                              })
                             }
                             className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2 font-mono"
                           />
@@ -5072,7 +5783,10 @@ export function AdminUsers() {
                             type="number"
                             value={evalForm.trades_per_day}
                             onChange={(e) =>
-                              setEvalForm({ ...evalForm, trades_per_day: +e.target.value })
+                              setEvalForm({
+                                ...evalForm,
+                                trades_per_day: +e.target.value,
+                              })
                             }
                             className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2 font-mono"
                           />
@@ -5083,7 +5797,10 @@ export function AdminUsers() {
                             type="number"
                             value={evalForm.min_trading_days}
                             onChange={(e) =>
-                              setEvalForm({ ...evalForm, min_trading_days: +e.target.value })
+                              setEvalForm({
+                                ...evalForm,
+                                min_trading_days: +e.target.value,
+                              })
                             }
                             className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2 font-mono"
                           />
@@ -5094,7 +5811,10 @@ export function AdminUsers() {
                             type="number"
                             value={evalForm.profit_split}
                             onChange={(e) =>
-                              setEvalForm({ ...evalForm, profit_split: +e.target.value })
+                              setEvalForm({
+                                ...evalForm,
+                                profit_split: +e.target.value,
+                              })
                             }
                             className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2 font-mono"
                           />
@@ -5106,7 +5826,10 @@ export function AdminUsers() {
                             placeholder="Auto"
                             value={evalForm.trading_days_done}
                             onChange={(e) =>
-                              setEvalForm({ ...evalForm, trading_days_done: e.target.value })
+                              setEvalForm({
+                                ...evalForm,
+                                trading_days_done: e.target.value,
+                              })
                             }
                             className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2 font-mono"
                           />
@@ -5118,7 +5841,10 @@ export function AdminUsers() {
                             placeholder="Auto"
                             value={evalForm.days_elapsed}
                             onChange={(e) =>
-                              setEvalForm({ ...evalForm, days_elapsed: e.target.value })
+                              setEvalForm({
+                                ...evalForm,
+                                days_elapsed: e.target.value,
+                              })
                             }
                             className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2 font-mono"
                           />
@@ -5130,7 +5856,9 @@ export function AdminUsers() {
                           disabled={saving}
                           className="btn-amber rounded-full px-6 py-2.5 text-sm disabled:opacity-50"
                         >
-                          {saving ? "Updating…" : "Save Evaluation & Risk Rules"}
+                          {saving
+                            ? "Updating…"
+                            : "Save Evaluation & Risk Rules"}
                         </button>
                       </DialogFooter>
                     </>
@@ -5171,7 +5899,8 @@ export function AdminUsers() {
                     </div>
                   ) : (
                     <div className="text-xs text-[var(--muted)]">
-                      No accounts yet. Crediting funds will auto-create a Funded Wallet.
+                      No accounts yet. Crediting funds will auto-create a Funded
+                      Wallet.
                     </div>
                   )}
                 </div>
@@ -5181,7 +5910,9 @@ export function AdminUsers() {
                     Fund Ledger History ({ledger.transactions.length})
                   </div>
                   {ledgerLoading ? (
-                    <div className="text-xs text-[var(--muted)]">Loading ledger…</div>
+                    <div className="text-xs text-[var(--muted)]">
+                      Loading ledger…
+                    </div>
                   ) : ledger.transactions.length ? (
                     <div className="max-h-48 overflow-y-auto rounded-xl border border-[var(--border)] divide-y divide-[var(--border)] bg-[var(--bg-1)]">
                       {ledger.transactions.map((tx) => {
@@ -5192,9 +5923,12 @@ export function AdminUsers() {
                             className="p-2.5 flex items-center justify-between gap-3 text-xs"
                           >
                             <div className="min-w-0">
-                              <div className="font-medium truncate">{tx.note}</div>
+                              <div className="font-medium truncate">
+                                {tx.note}
+                              </div>
                               <div className="text-[10px] font-mono text-[var(--muted-2)]">
-                                {tx.account_number} · {new Date(tx.created_at).toLocaleString()}
+                                {tx.account_number} ·{" "}
+                                {new Date(tx.created_at).toLocaleString()}
                               </div>
                             </div>
                             <div className="text-right shrink-0">
@@ -5247,7 +5981,8 @@ export function AdminWeeklyPayouts() {
   const [rows, setRows] = useState([]);
   const [editing, setEditing] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const load = () => api.get("/admin/weekly-payouts").then((r) => setRows(r.data || []));
+  const load = () =>
+    api.get("/admin/weekly-payouts").then((r) => setRows(r.data || []));
   useEffect(() => {
     load();
   }, []);
@@ -5257,7 +5992,8 @@ export function AdminWeeklyPayouts() {
         toast.error("Please upload or paste an image URL");
         return;
       }
-      if (editing.id) await api.put(`/admin/weekly-payouts/${editing.id}`, editing);
+      if (editing.id)
+        await api.put(`/admin/weekly-payouts/${editing.id}`, editing);
       else await api.post("/admin/weekly-payouts", editing);
       toast.success("Saved");
       broadcastSync("weekly-payouts");
@@ -5274,7 +6010,9 @@ export function AdminWeeklyPayouts() {
       broadcastSync("weekly-payouts");
       load();
     } catch (e) {
-      toast.error(formatApiError(e.response?.data?.detail, "Could not delete entry"));
+      toast.error(
+        formatApiError(e.response?.data?.detail, "Could not delete entry"),
+      );
     }
   };
   const onFile = (e) => {
@@ -5311,8 +6049,9 @@ export function AdminWeeklyPayouts() {
           </div>
           <h1 className="font-display text-4xl">Weekly Highest Payouts</h1>
           <p className="text-sm text-[var(--muted)] mt-2 max-w-2xl">
-            Curated winners shown on the home page — one card per plan (Starter / Standard / Pro).
-            Entries listed here override the auto-derived list from certificates.
+            Curated winners shown on the home page — one card per plan (Starter
+            / Standard / Pro). Entries listed here override the auto-derived
+            list from certificates.
           </p>
         </div>
         <button
@@ -5351,7 +6090,9 @@ export function AdminWeeklyPayouts() {
                     className="w-16 h-16 object-cover rounded-md border border-[var(--border)]"
                   />
                 </TableCell>
-                <TableCell className="font-display">{c.trader_name || "—"}</TableCell>
+                <TableCell className="font-display">
+                  {c.trader_name || "—"}
+                </TableCell>
                 <TableCell>{c.plan || "—"}</TableCell>
                 <TableCell className="text-[var(--accent)] font-mono">
                   {c.amount ? formatINR(c.amount) : "—"}
@@ -5379,9 +6120,13 @@ export function AdminWeeklyPayouts() {
             ))}
             {!rows.length && (
               <TableRow className="border-[var(--border)]">
-                <TableCell colSpan={8} className="text-center text-[var(--muted)] py-8">
-                  No curated weekly payouts yet — the home page currently auto-picks winners from
-                  Certificates. Add entries here to override.
+                <TableCell
+                  colSpan={8}
+                  className="text-center text-[var(--muted)] py-8"
+                >
+                  No curated weekly payouts yet — the home page currently
+                  auto-picks winners from Certificates. Add entries here to
+                  override.
                 </TableCell>
               </TableRow>
             )}
@@ -5405,8 +6150,14 @@ export function AdminWeeklyPayouts() {
                     className="btn-amber rounded-full px-4 py-2 text-sm inline-flex items-center gap-2 cursor-pointer"
                     data-testid="wp-upload-btn"
                   >
-                    <Upload size={14} /> {uploading ? "Loading…" : "Upload from device"}
-                    <input type="file" accept="image/*" onChange={onFile} className="hidden" />
+                    <Upload size={14} />{" "}
+                    {uploading ? "Loading…" : "Upload from device"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={onFile}
+                      className="hidden"
+                    />
                   </label>
                   {editing.image_url && (
                     <button
@@ -5419,10 +6170,18 @@ export function AdminWeeklyPayouts() {
                   )}
                 </div>
                 <div className="mt-3">
-                  <Label className="text-xs text-[var(--muted-2)]">…or paste an image URL</Label>
+                  <Label className="text-xs text-[var(--muted-2)]">
+                    …or paste an image URL
+                  </Label>
                   <Input
-                    value={editing.image_url?.startsWith("data:") ? "" : editing.image_url}
-                    onChange={(e) => setEditing({ ...editing, image_url: e.target.value })}
+                    value={
+                      editing.image_url?.startsWith("data:")
+                        ? ""
+                        : editing.image_url
+                    }
+                    onChange={(e) =>
+                      setEditing({ ...editing, image_url: e.target.value })
+                    }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                     placeholder="https://…"
                   />
@@ -5440,7 +6199,9 @@ export function AdminWeeklyPayouts() {
                   <Label>Trader Name</Label>
                   <Input
                     value={editing.trader_name}
-                    onChange={(e) => setEditing({ ...editing, trader_name: e.target.value })}
+                    onChange={(e) =>
+                      setEditing({ ...editing, trader_name: e.target.value })
+                    }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                   />
                 </div>
@@ -5448,7 +6209,9 @@ export function AdminWeeklyPayouts() {
                   <Label>Plan (Starter/Standard/Pro)</Label>
                   <Input
                     value={editing.plan}
-                    onChange={(e) => setEditing({ ...editing, plan: e.target.value })}
+                    onChange={(e) =>
+                      setEditing({ ...editing, plan: e.target.value })
+                    }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                   />
                 </div>
@@ -5458,7 +6221,9 @@ export function AdminWeeklyPayouts() {
                     type="number"
                     step="0.01"
                     value={editing.amount}
-                    onChange={(e) => setEditing({ ...editing, amount: +e.target.value })}
+                    onChange={(e) =>
+                      setEditing({ ...editing, amount: +e.target.value })
+                    }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                   />
                 </div>
@@ -5467,7 +6232,9 @@ export function AdminWeeklyPayouts() {
                   <Input
                     type="number"
                     value={editing.account_size}
-                    onChange={(e) => setEditing({ ...editing, account_size: +e.target.value })}
+                    onChange={(e) =>
+                      setEditing({ ...editing, account_size: +e.target.value })
+                    }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                   />
                 </div>
@@ -5475,7 +6242,9 @@ export function AdminWeeklyPayouts() {
                   <Label>Payout Date (DD/MM/YYYY)</Label>
                   <Input
                     value={editing.payout_date}
-                    onChange={(e) => setEditing({ ...editing, payout_date: e.target.value })}
+                    onChange={(e) =>
+                      setEditing({ ...editing, payout_date: e.target.value })
+                    }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                   />
                 </div>
@@ -5484,7 +6253,9 @@ export function AdminWeeklyPayouts() {
                   <Input
                     type="number"
                     value={editing.order}
-                    onChange={(e) => setEditing({ ...editing, order: +e.target.value })}
+                    onChange={(e) =>
+                      setEditing({ ...editing, order: +e.target.value })
+                    }
                     className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-2"
                   />
                 </div>
@@ -5493,7 +6264,9 @@ export function AdminWeeklyPayouts() {
                 <input
                   type="checkbox"
                   checked={editing.visible}
-                  onChange={(e) => setEditing({ ...editing, visible: e.target.checked })}
+                  onChange={(e) =>
+                    setEditing({ ...editing, visible: e.target.checked })
+                  }
                 />{" "}
                 Visible on home page
               </label>
@@ -5561,7 +6334,8 @@ export function AdminStories() {
 
   const storyVideoMedia = getReviewMedia(form.video_url || "");
 
-  const load = () => api.get("/admin/stories").then((r) => setRows(r.data || []));
+  const load = () =>
+    api.get("/admin/stories").then((r) => setRows(r.data || []));
   useEffect(() => {
     load();
   }, []);
@@ -5573,7 +6347,9 @@ export function AdminStories() {
       broadcastSync("stories");
       load();
     } catch (e) {
-      toast.error(formatApiError(e.response?.data?.detail, "Could not update story"));
+      toast.error(
+        formatApiError(e.response?.data?.detail, "Could not update story"),
+      );
     }
   };
 
@@ -5584,14 +6360,22 @@ export function AdminStories() {
       broadcastSync("stories");
       load();
     } catch (e) {
-      toast.error(formatApiError(e.response?.data?.detail, "Could not delete story"));
+      toast.error(
+        formatApiError(e.response?.data?.detail, "Could not delete story"),
+      );
     }
   };
 
   const createStory = async (e) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.title.trim() || form.story.trim().length < 10) {
-      return toast.error("Enter trader name, headline, and story (at least 10 characters).");
+    if (
+      !form.name.trim() ||
+      !form.title.trim() ||
+      form.story.trim().length < 10
+    ) {
+      return toast.error(
+        "Enter trader name, headline, and story (at least 10 characters).",
+      );
     }
     setSaving(true);
     try {
@@ -5614,7 +6398,9 @@ export function AdminStories() {
       });
       load();
     } catch (err) {
-      toast.error(formatApiError(err?.response?.data?.detail, "Could not post story"));
+      toast.error(
+        formatApiError(err?.response?.data?.detail, "Could not post story"),
+      );
     } finally {
       setSaving(false);
     }
@@ -5625,7 +6411,9 @@ export function AdminStories() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="chip mb-3">Community</div>
-          <h1 className="font-display text-4xl">Trader Stories ({rows.length})</h1>
+          <h1 className="font-display text-4xl">
+            Trader Stories ({rows.length})
+          </h1>
         </div>
         <button
           type="button"
@@ -5639,7 +6427,9 @@ export function AdminStories() {
 
       <div className="space-y-4 mt-10">
         {rows.length === 0 && (
-          <div className="card-panel p-6 text-[var(--muted)]">No stories submitted yet.</div>
+          <div className="card-panel p-6 text-[var(--muted)]">
+            No stories submitted yet.
+          </div>
         )}
         {rows.map((s) => (
           <div key={s.id} className="card-panel p-5">
@@ -5651,12 +6441,16 @@ export function AdminStories() {
                   {s.city ? ` · ${s.city}` : ""}
                   {s.payout_amount ? ` · ${s.payout_amount}` : ""}
                   {s.email ? ` · ${s.email}` : ""} · {s.rating || 5}★ ·{" "}
-                  {s.created_at ? new Date(s.created_at).toLocaleDateString() : ""}
+                  {s.created_at
+                    ? new Date(s.created_at).toLocaleDateString()
+                    : ""}
                 </div>
               </div>
               <span className="chip">{s.status}</span>
             </div>
-            <p className="text-sm text-[var(--muted)] mt-3 whitespace-pre-line">{s.story}</p>
+            <p className="text-sm text-[var(--muted)] mt-3 whitespace-pre-line">
+              {s.story}
+            </p>
             {s.video_url && (
               <a
                 href={s.video_url}
@@ -5684,7 +6478,10 @@ export function AdminStories() {
                   Reject
                 </button>
               )}
-              <ConfirmDeleteButton onDelete={() => del(s.id)} ariaLabel="Delete story" />
+              <ConfirmDeleteButton
+                onDelete={() => del(s.id)}
+                ariaLabel="Delete story"
+              />
             </div>
           </div>
         ))}
@@ -5693,7 +6490,9 @@ export function AdminStories() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="bg-[var(--bg-2)] border-[var(--border)] max-w-lg text-white">
           <DialogHeader>
-            <DialogTitle className="font-display text-2xl">Post Trader Story</DialogTitle>
+            <DialogTitle className="font-display text-2xl">
+              Post Trader Story
+            </DialogTitle>
           </DialogHeader>
           <form onSubmit={createStory} className="space-y-4">
             <div className="grid sm:grid-cols-2 gap-3">
@@ -5730,7 +6529,9 @@ export function AdminStories() {
                 <Label>Payout Amount</Label>
                 <Input
                   value={form.payout_amount}
-                  onChange={(e) => setForm({ ...form, payout_amount: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, payout_amount: e.target.value })
+                  }
                   className="bg-[var(--bg-1)] border-[var(--border-hi)] mt-1.5"
                   placeholder="₹84,000"
                 />
@@ -5763,7 +6564,9 @@ export function AdminStories() {
               <div className="flex flex-wrap gap-2 items-center mt-1.5">
                 <Input
                   value={form.video_url}
-                  onChange={(e) => setForm({ ...form, video_url: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, video_url: e.target.value })
+                  }
                   className="bg-[var(--bg-1)] border-[var(--border-hi)] flex-1 min-w-[200px]"
                   placeholder="https://youtube.com/... or upload MP4/WebM/MOV"
                 />
@@ -5866,7 +6669,9 @@ export function AdminTickets() {
       setSelected(null);
       toast.success(`Ticket ${data.id} updated`);
     } catch (err) {
-      toast.error(formatApiError(err?.response?.data?.detail, "Could not update ticket"));
+      toast.error(
+        formatApiError(err?.response?.data?.detail, "Could not update ticket"),
+      );
     } finally {
       setSaving(false);
     }
@@ -5879,12 +6684,15 @@ export function AdminTickets() {
       if (selected?.id === id) setSelected(null);
       load();
     } catch (e) {
-      toast.error(formatApiError(e.response?.data?.detail, "Could not delete ticket"));
+      toast.error(
+        formatApiError(e.response?.data?.detail, "Could not delete ticket"),
+      );
     }
   };
 
   const filtered = rows.filter((t) => {
-    if (statusFilter !== "All" && (t.status || "Pending") !== statusFilter) return false;
+    if (statusFilter !== "All" && (t.status || "Pending") !== statusFilter)
+      return false;
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       return (
@@ -5925,10 +6733,12 @@ export function AdminTickets() {
           <div className="chip mb-3">
             <MessageSquare size={12} /> Client Support Desk
           </div>
-          <h1 className="font-display text-4xl">Support Tickets ({rows.length})</h1>
+          <h1 className="font-display text-4xl">
+            Support Tickets ({rows.length})
+          </h1>
           <p className="text-sm text-[var(--muted)] mt-2">
-            All client tickets generated from the Contact page and Trader Dashboard appear here with
-            full client details.
+            All client tickets generated from the Contact page and Trader
+            Dashboard appear here with full client details.
           </p>
         </div>
         <Input
@@ -5960,14 +6770,20 @@ export function AdminTickets() {
 
       <div className="space-y-4 mt-6">
         {loading ? (
-          <div className="card-panel p-8 text-center text-[var(--muted)]">Loading tickets…</div>
+          <div className="card-panel p-8 text-center text-[var(--muted)]">
+            Loading tickets…
+          </div>
         ) : filtered.length === 0 ? (
           <div className="card-panel p-8 text-center text-[var(--muted)]">
             No support tickets matching this filter.
           </div>
         ) : (
           filtered.map((t) => (
-            <div key={t.id} className="card-panel p-5" data-testid={`admin-ticket-card-${t.id}`}>
+            <div
+              key={t.id}
+              className="card-panel p-5"
+              data-testid={`admin-ticket-card-${t.id}`}
+            >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
@@ -5978,10 +6794,14 @@ export function AdminTickets() {
                       {t.category || "Support"}
                     </span>
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded-full border border-[var(--border)] text-[var(--muted)]">
-                      {t.source === "contact-page" ? "Contact Page" : "Trader Dashboard"}
+                      {t.source === "contact-page"
+                        ? "Contact Page"
+                        : "Trader Dashboard"}
                     </span>
                   </div>
-                  <h2 className="font-display text-xl text-white mt-2">{t.subject}</h2>
+                  <h2 className="font-display text-xl text-white mt-2">
+                    {t.subject}
+                  </h2>
                 </div>
                 <div className="flex items-center gap-2">
                   <span
@@ -6033,7 +6853,10 @@ export function AdminTickets() {
                     Phone
                   </span>
                   <span className="inline-flex items-center gap-1 text-[var(--muted)] mt-0.5 font-mono">
-                    <Phone size={11} className="text-[var(--accent)] shrink-0" />
+                    <Phone
+                      size={11}
+                      className="text-[var(--accent)] shrink-0"
+                    />
                     {t.user_phone || "—"}
                   </span>
                 </div>
@@ -6043,7 +6866,9 @@ export function AdminTickets() {
                   </span>
                   <span className="text-[var(--muted)] mt-0.5 font-mono block">
                     {t.date ||
-                      (t.created_at ? String(t.created_at).slice(0, 16).replace("T", " ") : "—")}
+                      (t.created_at
+                        ? String(t.created_at).slice(0, 16).replace("T", " ")
+                        : "—")}
                   </span>
                 </div>
               </div>
@@ -6076,13 +6901,17 @@ export function AdminTickets() {
             <form onSubmit={saveTicket} className="space-y-4">
               <div className="text-xs text-[var(--muted)] space-y-1 p-3 rounded-xl bg-[var(--bg-1)] border border-[var(--border)]">
                 <div>
-                  <strong className="text-white">{selected.user_name || "Guest"}</strong> ·{" "}
-                  {selected.user_email || "—"}
+                  <strong className="text-white">
+                    {selected.user_name || "Guest"}
+                  </strong>{" "}
+                  · {selected.user_email || "—"}
                 </div>
                 {selected.user_phone && (
                   <div className="font-mono">Phone: {selected.user_phone}</div>
                 )}
-                <div className="text-[var(--text)] pt-1">{selected.subject}</div>
+                <div className="text-[var(--text)] pt-1">
+                  {selected.subject}
+                </div>
               </div>
               <div>
                 <Label>Ticket Status</Label>

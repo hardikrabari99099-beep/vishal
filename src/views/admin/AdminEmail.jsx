@@ -189,6 +189,16 @@ export default function AdminEmail() {
 
   const sendTest = async () => {
     const recipient = testTo.trim();
+    if (
+      !cfg.smtp_user?.trim() ||
+      !(cfg.configured || cfg.has_password || passwordInput.trim())
+    ) {
+      const msg =
+        "Enter your Business Gmail address and 16-character App Password in Section 1 first.";
+      setTestResult({ ok: false, to: recipient, error: msg });
+      toast.error(msg);
+      return;
+    }
     if (!recipient || !recipient.includes("@")) {
       toast.error("Enter the recipient email address you want to test.");
       return;
@@ -226,6 +236,20 @@ export default function AdminEmail() {
         port_used: data?.port_used,
       });
       toast.success(`Email accepted by SMTP for ${recipient}!`);
+      if (passwordInput.trim() || !cfg.configured) {
+        api
+          .put("/admin/email", {
+            ...cfg,
+            ...(passwordInput.trim() ? { smtp_password: passwordInput } : {}),
+          })
+          .then((savedRes) => {
+            if (savedRes?.data) {
+              setCfg(savedRes.data);
+              setPasswordInput("");
+            }
+          })
+          .catch(() => {});
+      }
       refreshLogs();
     } catch (err) {
       const msg = formatApiError(
@@ -242,6 +266,16 @@ export default function AdminEmail() {
 
   const sendDirectMail = async (e) => {
     e?.preventDefault?.();
+    if (
+      !cfg.smtp_user?.trim() ||
+      !(cfg.configured || cfg.has_password || passwordInput.trim())
+    ) {
+      const msg =
+        "Enter your Business Gmail address and 16-character App Password in Section 1 first.";
+      setDirectResult({ ok: false, error: msg });
+      toast.error(msg);
+      return;
+    }
     if (composeAudience === "single" && !composeTo.trim()) {
       toast.error("Enter a recipient email address (or pick a trader).");
       return;
@@ -1133,11 +1167,16 @@ export default function AdminEmail() {
           />
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          {!isConfigured && (
+            <span className="text-xs text-amber-300">
+              Save Gmail &amp; 16-char App Password above to send.
+            </span>
+          )}
           <button
             type="submit"
-            disabled={sendingDirect || !isConfigured}
-            className="btn-amber rounded-full px-5 py-2.5 text-sm inline-flex items-center gap-2 disabled:opacity-50"
+            disabled={sendingDirect}
+            className="btn-amber rounded-full px-5 py-2.5 text-sm inline-flex items-center gap-2 disabled:opacity-50 ml-auto"
             data-testid="email-compose-send"
           >
             <Send size={14} /> {sendingDirect ? "Sending…" : "Send Email Now"}
@@ -1220,7 +1259,7 @@ export default function AdminEmail() {
           <button
             type="button"
             onClick={sendTest}
-            disabled={testing || !isConfigured}
+            disabled={testing}
             className="btn-amber rounded-full px-5 py-2.5 text-sm inline-flex items-center gap-2 disabled:opacity-50"
             data-testid="email-send-test"
           >

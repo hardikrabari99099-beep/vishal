@@ -1,18 +1,36 @@
 import { useCallback, useState } from "react";
 import { Play, Youtube, Video, Volume2 } from "lucide-react";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "./ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "./ui/dialog";
 import { useSettings } from "../context/SettingsContext";
-import { getReviewMedia, getReviewPreviewUrl, getReviewThumbnail } from "../lib/review-media";
+import {
+  getReviewMedia,
+  getReviewPreviewUrl,
+  getReviewThumbnail,
+} from "../lib/review-media";
 import { useOffscreenPause } from "../lib/useOffscreenPause";
 
 function safePlayMedia(el, mutedFallback = false) {
   if (!el) return;
   try {
-    if (mutedFallback) el.muted = true;
+    el.playsInline = true;
+    el.setAttribute?.("playsinline", "");
+    el.setAttribute?.("webkit-playsinline", "");
+    if (mutedFallback) {
+      el.defaultMuted = true;
+      el.muted = true;
+      el.setAttribute?.("muted", "");
+    }
     const attempt = el.play?.();
     if (attempt && typeof attempt.catch === "function") {
       attempt.catch(() => {
+        el.defaultMuted = true;
         el.muted = true;
+        el.setAttribute?.("muted", "");
         try {
           el.play?.().catch(() => {});
         } catch {
@@ -36,7 +54,12 @@ function TraderCard({ item, onOpen, decorative, shouldAutoplay }) {
   const thumb = getReviewThumbnail(media, item.poster);
   const previewUrl = getReviewPreviewUrl(media);
   const canAutoplayInline = shouldAutoplay && !videoFailed;
-  const source = media.kind === "youtube" ? "YouTube" : media.kind === "vimeo" ? "Vimeo" : "Video";
+  const source =
+    media.kind === "youtube"
+      ? "YouTube"
+      : media.kind === "vimeo"
+        ? "Vimeo"
+        : "Video";
   return (
     <article className="trader-card" aria-hidden={decorative || undefined}>
       <button
@@ -56,14 +79,18 @@ function TraderCard({ item, onOpen, decorative, shouldAutoplay }) {
               muted
               loop
               playsInline
-              preload="metadata"
+              preload="auto"
+              onLoadedMetadata={(e) => safePlayMedia(e.currentTarget, true)}
+              onLoadedData={(e) => safePlayMedia(e.currentTarget, true)}
+              onCanPlay={(e) => safePlayMedia(e.currentTarget, true)}
               onError={() => setVideoFailed(true)}
             />
           ) : (
             <iframe
               src={previewUrl}
               title={`${item.name || "Trader"}'s story preview`}
-              allow="autoplay; encrypted-media; picture-in-picture"
+              allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+              referrerPolicy="strict-origin-when-cross-origin"
               loading="lazy"
               tabIndex={-1}
               aria-hidden="true"
@@ -84,7 +111,11 @@ function TraderCard({ item, onOpen, decorative, shouldAutoplay }) {
           </span>
         )}
         <span className="trader-card-source">
-          {media.kind === "youtube" ? <Youtube size={14} /> : <Video size={14} />}
+          {media.kind === "youtube" ? (
+            <Youtube size={14} />
+          ) : (
+            <Video size={14} />
+          )}
           {source}
           {item.views ? ` • ${item.views}` : ""}
         </span>
@@ -115,10 +146,15 @@ function TraderCard({ item, onOpen, decorative, shouldAutoplay }) {
 }
 
 /** FTMO-style horizontal auto-scrolling trader video cards. Content comes from Admin → Site Settings → Review Videos. */
-export default function OurTraders({ showEmpty = false, heading = "", subtitle = "" }) {
+export default function OurTraders({
+  showEmpty = false,
+  heading = "",
+  subtitle = "",
+}) {
   const { settings } = useSettings();
   const cfg = settings.video_reviews || {};
-  const videosVisible = cfg.enabled !== false && settings.home_sections?.trader_videos !== false;
+  const videosVisible =
+    cfg.enabled !== false && settings.home_sections?.trader_videos !== false;
   const items = (cfg.items || []).filter(
     (item) => item.enabled !== false && getReviewMedia(item.url || ""),
   );
@@ -135,7 +171,10 @@ export default function OurTraders({ showEmpty = false, heading = "", subtitle =
 
   if (!videosVisible) return null;
   if (!items.length && !showEmpty) return null;
-  const reps = Math.max(1, Math.min(2, Math.ceil(4 / Math.max(items.length, 1))));
+  const reps = Math.max(
+    1,
+    Math.min(2, Math.ceil(4 / Math.max(items.length, 1))),
+  );
   const half = Array.from({ length: reps }, () => items).flat();
   const loop = [...half, ...half];
   const inlineAutoplay = !marqueePaused && !active;
@@ -146,7 +185,9 @@ export default function OurTraders({ showEmpty = false, heading = "", subtitle =
         <div className="home-section-heading">
           <div>
             <div className="home-eyebrow">Our traders</div>
-            <h2 className="font-display">{heading || "Real traders. Real stories."}</h2>
+            <h2 className="font-display">
+              {heading || "Real traders. Real stories."}
+            </h2>
             <p>
               {subtitle ||
                 "Hear directly from IndiFunded traders about their journey, style and rewards."}
@@ -203,13 +244,16 @@ export default function OurTraders({ showEmpty = false, heading = "", subtitle =
                 autoPlay
                 loop
                 playsInline
+                preload="auto"
+                onCanPlay={(e) => safePlayMedia(e.currentTarget, false)}
               />
             ) : (
               <iframe
                 className="review-player"
                 src={media.url}
                 title={`${active?.name || "Trader"} video`}
-                allow="autoplay; fullscreen; picture-in-picture"
+                allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+                referrerPolicy="strict-origin-when-cross-origin"
                 allowFullScreen
               />
             ))}

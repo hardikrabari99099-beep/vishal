@@ -16,6 +16,8 @@ export function friendlyAuthError(message = "", isSignup = false) {
     return "This password is too common and has appeared in data leaks. Please choose a different, stronger password.";
   if (/already exists|already registered/i.test(m))
     return "An account with this email already exists. Switch to Sign in, or use Forgot password.";
+  if (/timeout|timed out|exceeded|econnaborted/i.test(m))
+    return "Sign-in is taking longer than expected. Please check your connection and try again.";
   if (/network|failed to fetch/i.test(m))
     return "Network problem — please check your internet and try again.";
   if (/email/i.test(m) && /valid/i.test(m))

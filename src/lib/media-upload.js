@@ -34,7 +34,8 @@ export function resolveMediaMimeType(file, kind = "video") {
       : rawType === "image/jpg"
         ? "image/jpeg"
         : rawType;
-  const allowed = kind === "image" ? SUPPORTED_IMAGE_MIMES : SUPPORTED_VIDEO_MIMES;
+  const allowed =
+    kind === "image" ? SUPPORTED_IMAGE_MIMES : SUPPORTED_VIDEO_MIMES;
   if (allowed.has(normalized)) return normalized;
 
   const ext = String(file?.name || "")

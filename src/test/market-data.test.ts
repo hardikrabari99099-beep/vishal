@@ -358,4 +358,3 @@ describe("intraday flat settlement bar cleanup and symbol aliases", () => {
     expect(maxHi).toBeGreaterThan(minLo);
   });
 });
-

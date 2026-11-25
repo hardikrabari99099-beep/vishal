@@ -15,6 +15,7 @@ const secrets = [
   env.RAZORPAY_WEBHOOK_SECRET,
   env.ADMIN_SESSION_SECRET,
   env.ADMIN_PASSWORD,
+  env.OPENAI_API_KEY,
 ].filter((v) => v && v.length >= 8);
 
 function jwtRole(v) {

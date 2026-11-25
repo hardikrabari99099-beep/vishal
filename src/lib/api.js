@@ -82,7 +82,9 @@ export function formatApiError(detail, fallback = "Something went wrong.") {
   if (Array.isArray(detail))
     return (
       detail
-        .map((e) => (e && typeof e.msg === "string" ? e.msg : JSON.stringify(e)))
+        .map((e) =>
+          e && typeof e.msg === "string" ? e.msg : JSON.stringify(e),
+        )
         .join(" ") || fallback
     );
   if (detail && typeof detail.msg === "string") return detail.msg || fallback;

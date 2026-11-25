@@ -2652,7 +2652,11 @@ export async function getCandles(
           ? buildBaselineCandles(underlyingInst, normTf)
           : null;
 
-    if (effectiveBase && effectiveBase.candles.length && effectiveBase.quote?.ltp) {
+    if (
+      effectiveBase &&
+      effectiveBase.candles.length &&
+      effectiveBase.quote?.ltp
+    ) {
       const derived = buildDerivedOptionChart(
         inst,
         effectiveBase.quote,

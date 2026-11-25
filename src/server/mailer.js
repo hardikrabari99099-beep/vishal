@@ -131,12 +131,21 @@ export function resolveEmailConfig(stored) {
 
   const cleanStored = {};
   if (stored && typeof stored === "object") {
+    const isSavedDoc = stored.id === "email_config";
     for (const [k, v] of Object.entries(stored)) {
       if (v !== undefined && v !== null && v !== "") cleanStored[k] = v;
       // Preserve explicit false booleans and explicit empty credential overrides
       if (typeof v === "boolean") cleanStored[k] = v;
-      if ((k === "smtp_user" || k === "smtp_password") && v === "")
+      if (k === "smtp_user" && v === "" && (!isSavedDoc || !envUser)) {
         cleanStored[k] = "";
+      }
+      if (
+        k === "smtp_password" &&
+        v === "" &&
+        (!isSavedDoc || Boolean(stored.password_cleared) || !envPass)
+      ) {
+        cleanStored[k] = "";
+      }
     }
   }
 
@@ -282,13 +291,23 @@ function buildTransportAttempts(cfg) {
     addAttempt(465, true, 4);
     addAttempt(587, false, 4);
   }
+
+  // Last-resort dual-stack fallback in case container DNS/routing only supports default resolution
+  if (isKnownHost) {
+    addAttempt(base.port, base.secure, undefined);
+    if (base.port === 587) {
+      addAttempt(465, true, undefined);
+    } else if (base.port === 465) {
+      addAttempt(587, false, undefined);
+    }
+  }
   return attempts;
 }
 
 function createTransporter(attempt, hasFallback = false) {
-  const connTimeout = hasFallback ? 7500 : 10000;
-  const greetTimeout = hasFallback ? 6500 : 9000;
-  const sockTimeout = hasFallback ? 10000 : 14000;
+  const connTimeout = hasFallback ? 4500 : 8000;
+  const greetTimeout = hasFallback ? 4000 : 7000;
+  const sockTimeout = hasFallback ? 7000 : 12000;
   return nodemailer.createTransport({
     host: attempt.host,
     port: attempt.port,
@@ -323,14 +342,17 @@ function isRetryableSmtpError(err) {
   return (
     [
       "ETIMEDOUT",
+      "ETIMEOUT",
       "ESOCKET",
       "ECONNREFUSED",
       "ECONNRESET",
       "EHOSTUNREACH",
       "ENETUNREACH",
+      "ENOTFOUND",
+      "EAI_AGAIN",
       "EPIPE",
     ].includes(code) ||
-    /ETIMEDOUT|Greeting never received|timeout|ECONNREFUSED|ECONNRESET|socket|TLS|handshake|Connection closed/i.test(
+    /ETIMEDOUT|ENOTFOUND|EAI_AGAIN|Greeting never received|timeout|ECONNREFUSED|ECONNRESET|socket|TLS|handshake|Connection closed/i.test(
       msg,
     )
   );

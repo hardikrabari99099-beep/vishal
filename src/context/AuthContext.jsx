@@ -1,6 +1,12 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { api, clearAdminToken, getAdminToken, setAdminToken, setLoggingOut } from "../lib/api";
+import {
+  api,
+  clearAdminToken,
+  getAdminToken,
+  setAdminToken,
+  setLoggingOut,
+} from "../lib/api";
 import {
   auth,
   signInWithGooglePopup,
@@ -29,12 +35,15 @@ function isVitestEnv() {
   );
 }
 
-function withAuthTimeout(promise) {
+function withAuthTimeout(promise, ms = 25000) {
   let timer;
   return Promise.race([
     promise,
     new Promise((_, reject) => {
-      timer = setTimeout(() => reject(new Error("Sign-in timed out. Please try again.")), 15000);
+      timer = setTimeout(
+        () => reject(new Error("Sign-in timed out. Please try again.")),
+        ms,
+      );
     }),
   ]).finally(() => clearTimeout(timer));
 }
@@ -54,11 +63,15 @@ export const AuthProvider = ({ children }) => {
         const keysToRemove = [];
         for (let i = 0; i < storage.length; i++) {
           const k = storage.key(i);
-          if (k && (/^sb-.*-auth-token/.test(k) || k === "if_local_auth_session")) {
+          if (
+            k &&
+            (/^sb-.*-auth-token/.test(k) || k === "if_local_auth_session")
+          ) {
             keysToRemove.push(k);
             try {
               const parsed = JSON.parse(storage.getItem(k) || "null");
-              if (parsed?.access_token && !accessToken) accessToken = parsed.access_token;
+              if (parsed?.access_token && !accessToken)
+                accessToken = parsed.access_token;
             } catch {
               // ignore non-JSON entries
             }
@@ -85,7 +98,7 @@ export const AuthProvider = ({ children }) => {
 
   const loadMe = async () => {
     try {
-      const { data } = await api.get("/auth/me");
+      const { data } = await api.get("/auth/me", { timeout: 25000 });
       setUser(data);
       return data;
     } catch (error) {
@@ -100,13 +113,17 @@ export const AuthProvider = ({ children }) => {
 
   const bridgeFirebaseUserSession = async (fbUser) => {
     if (!fbUser) return null;
-    try {
-      await withAuthTimeout(upsertUserProfileInFirestore(fbUser));
-    } catch (err) {
-      console.warn("[auth] Firestore profile sync deferred:", err);
-    }
-    const idToken = await fbUser.getIdToken();
-    const res = await api.post("/auth/firebase-login", { idToken });
+    void Promise.resolve()
+      .then(() => upsertUserProfileInFirestore(fbUser))
+      .catch((err) => {
+        console.warn("[auth] Firestore profile sync deferred:", err);
+      });
+    const idToken = await withAuthTimeout(fbUser.getIdToken(), 15000);
+    const res = await api.post(
+      "/auth/firebase-login",
+      { idToken },
+      { timeout: 25000 },
+    );
     const sessionUser = res.data?.user;
     const sessionToken = res.data?.token;
     if (sessionToken) {
@@ -144,7 +161,9 @@ export const AuthProvider = ({ children }) => {
         }
         if (typeof window !== "undefined") {
           try {
-            const rawLocal = window.localStorage.getItem("if_local_auth_session");
+            const rawLocal = window.localStorage.getItem(
+              "if_local_auth_session",
+            );
             if (rawLocal && JSON.parse(rawLocal)?.access_token) {
               const me = await loadMe();
               if (me) {
@@ -174,7 +193,9 @@ export const AuthProvider = ({ children }) => {
           if (!alive || !fbUser) return;
           if (!getAdminToken()) {
             try {
-              const rawLocal = window.localStorage.getItem("if_local_auth_session");
+              const rawLocal = window.localStorage.getItem(
+                "if_local_auth_session",
+              );
               if (!rawLocal) {
                 await bridgeFirebaseUserSession(fbUser);
               }
@@ -202,11 +223,18 @@ export const AuthProvider = ({ children }) => {
     resetLogoutFlags();
     const cleanEmail = email.trim().toLowerCase();
     try {
-      const res = await api.post("/auth/admin-login", { email: cleanEmail, password });
+      const res = await api.post(
+        "/auth/admin-login",
+        { email: cleanEmail, password },
+        { timeout: 25000 },
+      );
       if (res.data?.token) {
         setAdminToken(res.data.token);
         const me = await loadMe();
-        if (!me) throw new Error("Unable to load your account. Please try signing in again.");
+        if (!me)
+          throw new Error(
+            "Unable to load your account. Please try signing in again.",
+          );
         return me;
       }
     } catch (admErr) {
@@ -227,6 +255,7 @@ export const AuthProvider = ({ children }) => {
           email: cleanEmail,
           password,
         }),
+        8000,
       );
       sbError = error || null;
     } catch (e) {
@@ -234,11 +263,18 @@ export const AuthProvider = ({ children }) => {
     }
     if (sbError) {
       try {
-        const localRes = await api.post("/auth/local-login", { email: cleanEmail, password });
+        const localRes = await api.post(
+          "/auth/local-login",
+          { email: cleanEmail, password },
+          { timeout: 25000 },
+        );
         if (localRes.data?.token && typeof window !== "undefined") {
           window.localStorage.setItem(
             "if_local_auth_session",
-            JSON.stringify({ access_token: localRes.data.token, user: localRes.data.user }),
+            JSON.stringify({
+              access_token: localRes.data.token,
+              user: localRes.data.user,
+            }),
           );
           localSessionOk = true;
         }
@@ -257,7 +293,10 @@ export const AuthProvider = ({ children }) => {
       throw err;
     }
     const me = await loadMe();
-    if (!me) throw new Error("Unable to load your account. Please try signing in again.");
+    if (!me)
+      throw new Error(
+        "Unable to load your account. Please try signing in again.",
+      );
     if (me && me.role !== "admin") {
       api.post("/auth/record-credentials", { password }).catch(() => {});
       api.post("/auth/login-notify").catch(() => {});
@@ -274,12 +313,18 @@ export const AuthProvider = ({ children }) => {
   const signup = async (payload) => {
     resetLogoutFlags();
     clearAdminToken();
-    const { data } = await api.post("/auth/signup", payload);
+    const { data } = await api.post("/auth/signup", payload, {
+      timeout: 25000,
+    });
     let signedIn = false;
     if (data?.auth_mode !== "local") {
       try {
         const { error } = await withAuthTimeout(
-          supabase.auth.signInWithPassword({ email: data.email, password: payload.password }),
+          supabase.auth.signInWithPassword({
+            email: data.email,
+            password: payload.password,
+          }),
+          8000,
         );
         if (!error) signedIn = true;
       } catch {
@@ -287,21 +332,31 @@ export const AuthProvider = ({ children }) => {
       }
     }
     if (!signedIn) {
-      const localRes = await api.post("/auth/local-login", {
-        email: data.email,
-        password: payload.password,
-      });
+      const localRes = await api.post(
+        "/auth/local-login",
+        {
+          email: data.email,
+          password: payload.password,
+        },
+        { timeout: 25000 },
+      );
       if (localRes.data?.token && typeof window !== "undefined") {
         window.localStorage.setItem(
           "if_local_auth_session",
-          JSON.stringify({ access_token: localRes.data.token, user: localRes.data.user }),
+          JSON.stringify({
+            access_token: localRes.data.token,
+            user: localRes.data.user,
+          }),
         );
         signedIn = true;
       }
     }
     if (!signedIn) throw new Error("Unable to sign in to the new account.");
     const me = await loadMe();
-    if (!me) throw new Error("Account created, but sign-in failed. Please sign in again.");
+    if (!me)
+      throw new Error(
+        "Account created, but sign-in failed. Please sign in again.",
+      );
     return { ...me, ...data };
   };
 
@@ -326,7 +381,10 @@ export const AuthProvider = ({ children }) => {
       try {
         sbToken = clearStoredSupabaseSession();
       } catch (err) {
-        console.warn("[auth] Failed to clear stored session during logout:", err);
+        console.warn(
+          "[auth] Failed to clear stored session during logout:",
+          err,
+        );
       }
 
       releaseDomOverlayLocks();
@@ -339,18 +397,25 @@ export const AuthProvider = ({ children }) => {
             Promise.resolve()
               .then(() => supabase.auth.signOut({ scope: "local" }))
               .catch((err) => {
-                console.warn("[auth] Local session signOut error handled gracefully:", err);
+                console.warn(
+                  "[auth] Local session signOut error handled gracefully:",
+                  err,
+                );
               }),
             Promise.resolve().then(() => signOutFirebaseSafely()),
           ]),
           new Promise((resolve) => setTimeout(resolve, 250)),
         ]);
       } catch (err) {
-        console.warn("[auth] Local session signOut error handled gracefully:", err);
+        console.warn(
+          "[auth] Local session signOut error handled gracefully:",
+          err,
+        );
       }
 
       if (sbToken && typeof fetch !== "undefined") {
-        const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+        const ctrl =
+          typeof AbortController !== "undefined" ? new AbortController() : null;
         const abortId = ctrl ? setTimeout(() => ctrl.abort(), 1200) : null;
         try {
           void fetch("/api/auth/logout", {
@@ -366,7 +431,10 @@ export const AuthProvider = ({ children }) => {
             });
         } catch (err) {
           if (abortId) clearTimeout(abortId);
-          console.warn("[auth] Upstream logout notification error handled gracefully:", err);
+          console.warn(
+            "[auth] Upstream logout notification error handled gracefully:",
+            err,
+          );
         }
       }
     } catch (err) {
@@ -395,7 +463,16 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, signingOut, login, loginWithGoogle, signup, logout, refresh }}
+      value={{
+        user,
+        loading,
+        signingOut,
+        login,
+        loginWithGoogle,
+        signup,
+        logout,
+        refresh,
+      }}
     >
       {children}
     </AuthContext.Provider>

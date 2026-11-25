@@ -524,7 +524,11 @@ function storeMediaChunkLocal(uploadId, index, chunkStr) {
   if (!localPersistenceDisabled()) {
     try {
       const { mediaDir } = getLocalStorePaths();
-      const chunkDir = path.join(mediaDir, "chunks", sanitizeMediaKey(uploadId));
+      const chunkDir = path.join(
+        mediaDir,
+        "chunks",
+        sanitizeMediaKey(uploadId),
+      );
       fs.mkdirSync(chunkDir, { recursive: true });
       fs.writeFileSync(path.join(chunkDir, `${index}.part`), chunkStr, "utf8");
     } catch {
@@ -1496,6 +1500,7 @@ async function route(request, path) {
         method,
         headers: fwdHeaders,
         body: reqBody,
+        signal: AbortSignal.timeout(10000),
       });
       const resHeaders = new Headers();
       for (const hName of [
@@ -1864,7 +1869,7 @@ async function route(request, path) {
       created_at: now(),
     };
     await db.put("users", doc);
-    await triggerWelcomeEmailOnce(doc);
+    void triggerWelcomeEmailOnce(doc).catch(() => {});
     return json({
       ...sanitizeUserForClient(doc),
       role: "user",
@@ -1925,6 +1930,7 @@ async function route(request, path) {
           });
           await appendEmailLog({
             trigger: "reset",
+            from: emailCfg.from_email || emailCfg.smtp_user,
             to: email,
             subject: "Reset your IndiFunded password",
             provider: emailCfg.provider,
@@ -1937,6 +1943,15 @@ async function route(request, path) {
             "[auth/forgot-password] SMTP send failed:",
             err?.message || err,
           );
+          await appendEmailLog({
+            trigger: "reset",
+            from: emailCfg.from_email || emailCfg.smtp_user,
+            to: email,
+            subject: "Reset your IndiFunded password",
+            provider: emailCfg.provider,
+            status: "failed",
+            error: err?.message || "SMTP send failed",
+          });
         }
       }
     }
@@ -1971,14 +1986,20 @@ async function route(request, path) {
     if (!idToken) fail(400, "Firebase ID token is required");
     const fbApiKey = env("FIREBASE_WEB_API_KEY") || firebaseConfig.apiKey;
     if (!fbApiKey) fail(500, "Firebase configuration is not available");
-    const lookupRes = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(fbApiKey)}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken }),
-      },
-    );
+    let lookupRes;
+    try {
+      lookupRes = await fetch(
+        `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(fbApiKey)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idToken }),
+          signal: AbortSignal.timeout(8000),
+        },
+      );
+    } catch {
+      fail(504, "Google sign-in verification timed out. Please try again.");
+    }
     const lookupData = await lookupRes.json().catch(() => ({}));
     const fbUser =
       lookupRes.ok && Array.isArray(lookupData?.users)
@@ -1997,7 +2018,7 @@ async function route(request, path) {
       isAdminIdentifier(email);
 
     if (isAdminEmail) {
-      await triggerLoginWelcomeEmail(
+      void triggerLoginWelcomeEmail(
         {
           id: "admin-indifunded",
           email,
@@ -2005,7 +2026,7 @@ async function route(request, path) {
           role: "admin",
         },
         { allowAdmin: true },
-      );
+      ).catch(() => {});
       const token = signAdminToken(email);
       return json({
         token,
@@ -2039,10 +2060,12 @@ async function route(request, path) {
         created_at: now(),
       };
       await db.put("users", profile);
-      const welcomeRes = await triggerWelcomeEmailOnce(profile);
-      if (!welcomeRes?.sent) {
-        await triggerLoginWelcomeEmail(profile);
-      }
+      void triggerWelcomeEmailOnce(profile)
+        .then((welcomeRes) => {
+          if (!welcomeRes?.sent) return triggerLoginWelcomeEmail(profile);
+          return null;
+        })
+        .catch(() => {});
     } else {
       if (
         (fbUser.localId && profile.firebase_uid !== fbUser.localId) ||
@@ -2058,7 +2081,7 @@ async function route(request, path) {
         };
         await db.put("users", profile);
       }
-      await triggerLoginWelcomeEmail(profile);
+      void triggerLoginWelcomeEmail(profile).catch(() => {});
     }
     const token = signTraderToken(profile);
     return json({
@@ -2085,6 +2108,7 @@ async function route(request, path) {
             "Content-Type": "application/json;charset=UTF-8",
           },
           body: "{}",
+          signal: AbortSignal.timeout(4000),
         });
       } catch {
         // Best-effort upstream revocation; client session is already cleared.
@@ -5629,7 +5653,10 @@ async function route(request, path) {
       }),
     );
   }
-  if ((p = is("GET", "/media/:filename")) || (p = is("HEAD", "/media/:filename"))) {
+  if (
+    (p = is("GET", "/media/:filename")) ||
+    (p = is("HEAD", "/media/:filename"))
+  ) {
     const assetId = str(p.filename).replace(
       /\.(?:mp4|m4v|webm|mov|jpg|jpeg|png|webp)$/i,
       "",
@@ -5729,27 +5756,35 @@ async function route(request, path) {
     const smtpUser = hasIncomingUser
       ? str(b.smtp_user).trim()
       : str(old.smtp_user).trim();
+    const userChanged =
+      hasIncomingUser && smtpUser !== str(old.smtp_user).trim();
     const rawFrom =
       b.from_email !== undefined
         ? str(b.from_email).trim()
-        : str(old.from_email).trim();
+        : userChanged
+          ? ""
+          : str(old.from_email).trim();
     const fromEmail = rawFrom || smtpUser;
     const rawReplyTo =
       b.reply_to !== undefined
         ? str(b.reply_to).trim()
-        : str(old.reply_to).trim();
+        : userChanged
+          ? ""
+          : str(old.reply_to).trim();
     const replyTo = rawReplyTo || fromEmail;
+    const resolvedHost =
+      str(b.smtp_host).trim() ||
+      (provider !== old.provider && preset.smtp_host ? preset.smtp_host : "") ||
+      old.smtp_host ||
+      preset.smtp_host ||
+      "smtp.gmail.com";
     return {
       provider,
       preset,
       draft: {
         ...old,
         provider,
-        smtp_host:
-          str(b.smtp_host).trim() ||
-          old.smtp_host ||
-          preset.smtp_host ||
-          "smtp.gmail.com",
+        smtp_host: resolvedHost,
         smtp_port: port,
         smtp_secure: smtpSecure,
         smtp_user: smtpUser,
@@ -5809,6 +5844,12 @@ async function route(request, path) {
           : b.smtp_secure !== undefined
             ? Boolean(b.smtp_secure)
             : true;
+    const passwordCleared =
+      rawPass !== ""
+        ? false
+        : b.clear_password
+          ? true
+          : Boolean(old.password_cleared && !nextPassword);
     const next = {
       ...DEFAULT_EMAIL_CONFIG,
       ...old,
@@ -5820,6 +5861,7 @@ async function route(request, path) {
       smtp_secure: smtpSecure,
       smtp_user: nextUser,
       smtp_password: nextPassword,
+      password_cleared: passwordCleared,
       from_name: str(b.from_name).trim() || "IndiFunded",
       from_email: nextFromEmail,
       reply_to: str(b.reply_to).trim() || nextFromEmail,
@@ -6090,7 +6132,7 @@ async function route(request, path) {
     return json({ ok: true });
   }
 
-  // ===== Admin AI Site Editor (Gemini A-to-Z CMS) =====
+  // ===== Admin AI Site Editor (OpenAI A-to-Z CMS) =====
   if (is("POST", "/admin/ai-edit")) {
     await currentAdmin();
     const b = await body();
@@ -7617,43 +7659,45 @@ async function route(request, path) {
     const b = await body();
     const d = str(b.data_url);
     if (!d.startsWith("data:image/")) fail(400, "Not a valid image data URL");
-    const geminiKey = env("GEMINI_API_KEY").trim();
+    const { readOpenAiApiKey, callOpenAiChat, OpenAiClientError } =
+      await import("./openai-client");
+    const openAiKey = readOpenAiApiKey();
     const lovableKey = env("LOVABLE_API_KEY").trim();
-    const hasGemini = Boolean(geminiKey && !/^MY_/i.test(geminiKey));
-    if (!hasGemini && !lovableKey) {
+    if (!openAiKey && !lovableKey) {
       fail(
         503,
-        "AI is not configured. Add GEMINI_API_KEY in Settings > Secrets.",
+        "AI is not configured. Add OPENAI_API_KEY in Settings > Secrets.",
       );
     }
     const system =
       'You are a receipt/bank-transfer OCR assistant. You will be shown a screenshot of a UPI/bank payout receipt. Extract these fields and return ONLY valid JSON (no markdown fences, no commentary): {"name": "recipient full name", "amount": <number in INR without commas or currency symbol>, "date": "YYYY-MM-DD", "plan": "Starter | Standard | Pro (guess based on amount: <15000 Starter, 15000-30000 Standard, >30000 Pro)", "raw_text": "short summary of what the receipt shows"}. If a field is not visible, use null.';
     let rawOutputText = "";
-    if (hasGemini) {
-      const m = d.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
-      if (!m) fail(400, "Image must be a base64-encoded data URL");
-      const { GoogleGenAI } = await import("@google/genai");
-      const ai = new GoogleGenAI({
-        apiKey: geminiKey,
-        httpOptions: { headers: { "User-Agent": "aistudio-build" } },
-      });
-      const resp = await ai.models.generateContent({
-        model: "gemini-4-hydrogen",
-        contents: [
-          {
-            role: "user",
-            parts: [
-              { text: "Extract the fields from this payout receipt." },
-              { inlineData: { mimeType: m[1], data: m[2] } },
-            ],
-          },
-        ],
-        config: {
-          systemInstruction: system,
-          responseMimeType: "application/json",
-        },
-      });
-      rawOutputText = str(resp.text);
+    if (openAiKey) {
+      try {
+        rawOutputText = await callOpenAiChat({
+          apiKey: openAiKey,
+          messages: [
+            { role: "system", content: system },
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: "Extract the fields from this payout receipt.",
+                },
+                { type: "image_url", image_url: { url: d } },
+              ],
+            },
+          ],
+          responseFormat: { type: "json_object" },
+          temperature: 0,
+        });
+      } catch (err) {
+        if (err instanceof OpenAiClientError) {
+          fail(err.status, err.message);
+        }
+        throw err;
+      }
     } else {
       const resp = await fetch(
         "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -7664,7 +7708,7 @@ async function route(request, path) {
             "content-type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-3-flash-preview",
+            model: "openai/gpt-4o-mini",
             messages: [
               { role: "system", content: system },
               {
