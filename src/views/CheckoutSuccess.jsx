@@ -1,9 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "@/lib/router-compat";
 import { api } from "../lib/api";
+import { useSEO } from "../lib/useSEO";
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 
 export default function CheckoutSuccess() {
+  useSEO({
+    title: "Payment Received | IndiFunded",
+    description: "Your IndiFunded challenge payment status.",
+    path: "/checkout/success",
+    noindex: true,
+  });
   const [params] = useSearchParams();
   const sessionId = params.get("session_id");
   const [status, setStatus] = useState({ loading: true });

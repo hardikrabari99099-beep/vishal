@@ -9,9 +9,10 @@ import { Loader2, LockKeyhole, UserPlus, Eye, EyeOff, AlertCircle, Check, X } fr
 
 export default function Login() {
   useSEO({
-    title: "Sign in — IndiFunded",
-    description: "IndiFunded trader sign-in.",
+    title: "Sign In | IndiFunded",
+    description: "Sign in or create your IndiFunded trader account.",
     path: "/login",
+    noindex: true,
   });
   const { user, login, loginWithGoogle, signup } = useAuth();
   const loc = useLocation();

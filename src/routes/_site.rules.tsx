@@ -1,24 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Rules } from "@/views/SimplePages";
+import { buildRouteHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/_site/rules")({
-  head: () => ({
-    meta: [
-      { title: "Challenge Rules — IndiFunded" },
-      {
-        name: "description",
-        content:
-          "Simple, realistic, trader-first rules: profit target, max loss, trading days and trade limits.",
-      },
-      { property: "og:title", content: "Challenge Rules — IndiFunded" },
-      {
-        property: "og:description",
-        content:
-          "Simple, realistic, trader-first rules: profit target, max loss, trading days and trade limits.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  head: () =>
+    buildRouteHead({
+      title: "Trading Challenge Rules & Funded Policies | IndiFunded",
+      description:
+        "Review IndiFunded evaluation rules for Nifty and Bank Nifty option buying, 70/30 profit sharing, 20% funded max drawdown, scaling criteria, and payouts.",
+      path: "/rules",
+      breadcrumbs: [
+        { name: "Home", path: "/" },
+        { name: "Challenge Rules", path: "/rules" },
+      ],
+    }),
   component: Rules,
 });

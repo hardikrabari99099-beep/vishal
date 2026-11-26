@@ -1,24 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { TraderStories } from "@/views/ExtraPages";
+import { buildRouteHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/_site/stories")({
-  head: () => ({
-    meta: [
-      { title: "Trader Stories — IndiFunded" },
-      {
-        name: "description",
-        content:
-          "Real experiences and video reviews from funded IndiFunded traders.",
-      },
-      { property: "og:title", content: "Trader Stories — IndiFunded" },
-      {
-        property: "og:description",
-        content:
-          "Real experiences and video reviews from funded IndiFunded traders.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  head: () =>
+    buildRouteHead({
+      title: "Funded Trader Stories & Reviews India | IndiFunded",
+      description:
+        "Read trader experiences, funded account journeys, and payout stories shared by participants in IndiFunded trading challenges across India.",
+      path: "/stories",
+      breadcrumbs: [
+        { name: "Home", path: "/" },
+        { name: "Trader Stories", path: "/stories" },
+      ],
+    }),
   component: TraderStories,
 });

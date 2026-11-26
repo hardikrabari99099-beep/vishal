@@ -1,27 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
 import Home from "@/views/Home";
+import { DEFAULT_SETTINGS } from "@/lib/default-settings";
+import { buildFaqSchema, buildRouteHead } from "@/lib/seo";
+
+const HOME_FAQS = (DEFAULT_SETTINGS.faq_groups || [])
+  .flatMap((group) => group.items || [])
+  .slice(0, 6);
 
 export const Route = createFileRoute("/_site/")({
-  head: () => ({
-    meta: [
-      { title: "IndiFunded — India's 1st Prop Trading Firm" },
-      {
-        name: "description",
-        content:
-          "Pass the challenge, get funded up to ₹5,00,000. Trade NSE, BankNifty and Nifty50 with a 70% profit split and 24-hour payouts.",
-      },
-      {
-        property: "og:title",
-        content: "IndiFunded — India's 1st Prop Trading Firm",
-      },
-      {
-        property: "og:description",
-        content:
-          "Pass the challenge, get funded up to ₹5,00,000. Trade NSE, BankNifty and Nifty50 with a 70% profit split and 24-hour payouts.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  head: () =>
+    buildRouteHead({
+      title: "IndiFunded | Indian Trading Challenges & Funded Trader Programs",
+      description:
+        "Explore IndiFunded trading challenges designed for traders interested in Indian markets. Discover challenge rules, account options, trading objectives and program details.",
+      path: "/",
+      breadcrumbs: [{ name: "Home", path: "/" }],
+      extraSchemas: HOME_FAQS.length ? [buildFaqSchema(HOME_FAQS)] : [],
+    }),
   component: Home,
 });

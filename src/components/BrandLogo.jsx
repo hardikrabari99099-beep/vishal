@@ -40,9 +40,9 @@ export default function BrandLogo({
   }
 
   const sizes = {
-    sm: { mark: "w-7 h-7", text: "text-base", tagline: "text-[9px]", gap: "gap-2" },
-    md: { mark: "w-10 h-10", text: "text-xl", tagline: "text-[10px]", gap: "gap-2.5" },
-    lg: { mark: "w-12 h-12", text: "text-2xl md:text-3xl", tagline: "text-[11px]", gap: "gap-3" },
+    sm: { mark: "w-7 h-7", px: 28, text: "text-base", tagline: "text-[9px]", gap: "gap-2" },
+    md: { mark: "w-10 h-10", px: 40, text: "text-xl", tagline: "text-[10px]", gap: "gap-2.5" },
+    lg: { mark: "w-12 h-12", px: 48, text: "text-2xl md:text-3xl", tagline: "text-[11px]", gap: "gap-3" },
   };
   const s = sizes[size] || sizes.md;
   const firstClass = variant === "muted" ? "text-white/90" : "text-white";
@@ -52,6 +52,9 @@ export default function BrandLogo({
       <img
         src={src}
         alt={name}
+        width={s.px}
+        height={s.px}
+        decoding="async"
         className={`${s.mark} rounded-xl object-contain bg-white/5 ring-1 ring-[var(--border-hi)] p-1`}
       />
       <div className="flex flex-col leading-none">

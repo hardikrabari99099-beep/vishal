@@ -4,6 +4,7 @@ import { api } from "../lib/api";
 import { useSettings } from "../context/SettingsContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useSEO } from "../lib/useSEO";
 import HowItWorksSection from "../components/HowItWorks";
 import {
   ShieldCheck,
@@ -62,6 +63,12 @@ const Shell = ({ chip, title, sub, compact = false, children }) => (
 export function HowItWorksPage() {
   const { settings } = useSettings();
   const hiw = settings.how_it_works || {};
+  useSEO({
+    title: "How Funded Trader Evaluation Works in India | IndiFunded",
+    description:
+      "Learn the 4-step IndiFunded trading evaluation program from virtual challenge onboarding to same-day funded account activation and 24-hour payout requests.",
+    path: "/how-it-works",
+  });
   return (
     <Shell
       compact
@@ -95,6 +102,12 @@ export function TrustCenter() {
   const { settings } = useSettings();
   const t = settings.trust || {};
   const labels = t.labels || {};
+  useSEO({
+    title: "Trust & Transparency Center | IndiFunded",
+    description:
+      "Verify IndiFunded company registration details for BRVS Education Pvt Ltd, support contacts, and published payout verification records.",
+    path: "/trust",
+  });
   return (
     <Shell
       chip={labels.page_chip || "Trust Center"}
@@ -148,6 +161,12 @@ export function TrustCenter() {
 export function VerifyPayout() {
   const { settings } = useSettings();
   const [searchParams, setSearchParams] = useSearchParams();
+  useSEO({
+    title: "Verify Payout Certificate & QR Proof | IndiFunded",
+    description:
+      "Verify any published IndiFunded trader payout by Payout ID, Certificate ID, or QR scan for transparent payout verification.",
+    path: "/verify-payout",
+  });
   const initialCode = (
     searchParams.get("code") ||
     searchParams.get("q") ||
@@ -525,7 +544,9 @@ export function VerifyPayout() {
                   <div className="bg-black/40 border-b border-[var(--border)] p-3">
                     <img
                       src={c.image_url}
-                      alt={`Verified certificate for ${c.trader_name}`}
+                      alt={`Verified payout certificate for ${c.trader_name || "IndiFunded trader"}`}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full max-h-72 object-contain rounded-lg"
                     />
                   </div>
@@ -590,6 +611,12 @@ export function VerifyPayout() {
 
 export function CredentialVerify({ code }) {
   const { settings, loading } = useSettings();
+  useSEO({
+    title: "Verify Certificate | IndiFunded",
+    description: "Scan-to-verify page for IndiFunded certificates and awards.",
+    path: `/verify/${code}`,
+    noindex: true,
+  });
   const c = findCredential(settings.trust?.credentials, code);
   const [origin, setOrigin] = useState("");
   useEffect(() => {
@@ -742,8 +769,37 @@ const POLICIES = {
   },
 };
 
+const POLICY_SEO = {
+  privacy: {
+    title: "Privacy Policy | IndiFunded",
+    description:
+      "Learn how IndiFunded and BRVS Education Pvt Ltd collect, protect, and manage your personal account and trading verification data.",
+    path: "/privacy",
+  },
+  terms: {
+    title: "Terms and Conditions | IndiFunded",
+    description:
+      "Review the terms and conditions governing IndiFunded trading evaluation challenges, funded accounts, rules compliance, and profit sharing.",
+    path: "/terms",
+  },
+  refund: {
+    title: "Refund Policy | IndiFunded",
+    description:
+      "Read the IndiFunded challenge fee refund policy covering pre-activation review windows, duplicate UPI transactions, and evaluation terms.",
+    path: "/refund-policy",
+  },
+  risk: {
+    title: "Risk Disclosure | IndiFunded",
+    description:
+      "Read the IndiFunded trading risk disclosure outlining financial market risks, educational simulation boundaries, and trader responsibility.",
+    path: "/risk-disclosure",
+  },
+};
+
 export function PolicyPage({ kind }) {
   const p = POLICIES[kind];
+  const seo = POLICY_SEO[kind] || POLICY_SEO.privacy;
+  useSEO(seo);
   return (
     <Shell chip="Legal" title={p.title}>
       <div className="max-w-3xl space-y-6">
@@ -759,6 +815,12 @@ export function PolicyPage({ kind }) {
 }
 
 export function ForgotPassword() {
+  useSEO({
+    title: "Forgot Password | IndiFunded",
+    description: "Get a link to reset your IndiFunded account password.",
+    path: "/forgot-password",
+    noindex: true,
+  });
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const submit = async (e) => {
@@ -819,6 +881,12 @@ export function ForgotPassword() {
 }
 
 export function ResetPassword() {
+  useSEO({
+    title: "Reset Password | IndiFunded",
+    description: "Choose a new password for your IndiFunded account.",
+    path: "/reset-password",
+    noindex: true,
+  });
   const nav = useNavigate();
   const [pw, setPw] = useState("");
   const submit = async (e) => {
@@ -851,6 +919,12 @@ export function ResetPassword() {
 
 export function TraderStories() {
   const { settings, syncVersion } = useSettings();
+  useSEO({
+    title: "Funded Trader Stories & Reviews India | IndiFunded",
+    description:
+      "Read trader experiences, funded account journeys, and payout stories shared by participants in IndiFunded trading challenges across India.",
+    path: "/stories",
+  });
   const storiesHidden =
     settings.home_sections?.success_stories === false ||
     settings.trust?.stories_enabled === false;

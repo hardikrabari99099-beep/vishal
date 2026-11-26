@@ -1,24 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import Leaderboard from "@/views/Leaderboard";
+import { buildRouteHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/_site/leaderboard")({
-  head: () => ({
-    meta: [
-      { title: "Top Funded Traders — IndiFunded" },
-      {
-        name: "description",
-        content:
-          "See the IndiFunded leaderboard of top-earning funded traders across India.",
-      },
-      { property: "og:title", content: "Top Funded Traders — IndiFunded" },
-      {
-        property: "og:description",
-        content:
-          "See the IndiFunded leaderboard of top-earning funded traders across India.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  head: () =>
+    buildRouteHead({
+      title: "Funded Trader Leaderboard India | IndiFunded",
+      description:
+        "View top-performing funded traders in India on IndiFunded ranked by verified lifetime payouts and evaluation milestones.",
+      path: "/leaderboard",
+      breadcrumbs: [
+        { name: "Home", path: "/" },
+        { name: "Leaderboard", path: "/leaderboard" },
+      ],
+    }),
   component: Leaderboard,
 });

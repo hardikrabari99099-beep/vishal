@@ -11,9 +11,9 @@ export default function Referral() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
   useSEO({
-    title: "Refer & Earn — Get ₹500 for every funded referral",
+    title: "Refer & Earn Trader Rewards | IndiFunded",
     description:
-      "Refer traders to IndiFunded and earn ₹500 bonus when they pass their challenge. Share your unique code and track your earnings.",
+      "Generate your IndiFunded referral code so fellow Indian traders save 5% on challenge fees while you earn referral rewards per qualifying signup.",
     path: "/refer",
   });
 

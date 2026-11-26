@@ -1,23 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CredentialVerify } from "@/views/ExtraPages";
+import { buildRouteHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/_site/verify/$code")({
-  head: () => ({
-    meta: [
-      { title: "Verify Certificate — IndiFunded" },
-      {
-        name: "description",
-        content: "Scan-to-verify page for IndiFunded certificates and awards.",
-      },
-      { property: "og:title", content: "Verify Certificate — IndiFunded" },
-      {
-        property: "og:description",
-        content: "Scan-to-verify page for IndiFunded certificates and awards.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-    ],
-  }),
+  head: ({ params }) =>
+    buildRouteHead({
+      title: "Verify Certificate | IndiFunded",
+      description:
+        "Scan-to-verify page for IndiFunded certificates and awards.",
+      path: `/verify/${params.code}`,
+      noindex: true,
+    }),
   component: VerifyPage,
 });
 

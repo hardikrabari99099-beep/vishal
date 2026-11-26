@@ -1,24 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Payouts } from "@/views/SimplePages";
+import { buildRouteHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/_site/payouts")({
-  head: () => ({
-    meta: [
-      { title: "Verified Payouts — IndiFunded" },
-      {
-        name: "description",
-        content:
-          "Real payouts to real IndiFunded traders, processed within 24 hours.",
-      },
-      { property: "og:title", content: "Verified Payouts — IndiFunded" },
-      {
-        property: "og:description",
-        content:
-          "Real payouts to real IndiFunded traders, processed within 24 hours.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  head: () =>
+    buildRouteHead({
+      title: "Funded Trader Payouts & Withdrawals | IndiFunded",
+      description:
+        "Submit profit withdrawal requests for your IndiFunded funded trading account via UPI or bank transfer, reviewed and processed within 24 hours.",
+      path: "/payouts",
+      breadcrumbs: [
+        { name: "Home", path: "/" },
+        { name: "Payouts", path: "/payouts" },
+      ],
+    }),
   component: Payouts,
 });

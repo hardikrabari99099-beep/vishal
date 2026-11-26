@@ -1,24 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import Challenges from "@/views/Challenges";
+import { buildRouteHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/_site/challenges")({
-  head: () => ({
-    meta: [
-      { title: "Challenge Plans — IndiFunded" },
-      {
-        name: "description",
-        content:
-          "Compare IndiFunded challenge plans from ₹1L to ₹7L funded accounts and start your evaluation today.",
-      },
-      { property: "og:title", content: "Challenge Plans — IndiFunded" },
-      {
-        property: "og:description",
-        content:
-          "Compare IndiFunded challenge plans from ₹1L to ₹7L funded accounts and start your evaluation today.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  head: () =>
+    buildRouteHead({
+      title: "Trading Challenges & Funded Accounts India | IndiFunded",
+      description:
+        "Compare Indian stock market trading challenges, Nifty and Bank Nifty evaluation plans, Instant Funding, and 1-Step accounts up to ₹10,00,000.",
+      path: "/challenges",
+      breadcrumbs: [
+        { name: "Home", path: "/" },
+        { name: "Trading Challenges", path: "/challenges" },
+      ],
+    }),
   component: Challenges,
 });

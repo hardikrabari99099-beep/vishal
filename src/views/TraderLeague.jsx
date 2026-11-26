@@ -18,9 +18,9 @@ import {
 
 export default function TraderLeague() {
   useSEO({
-    title: "IndiFunded Trader League — Register Now",
+    title: "IndiFunded Trader League Competition | IndiFunded",
     description:
-      "Join the IndiFunded Trader League. ₹999 for existing IndiFunded traders (with Trader ID), ₹1499 for new traders. Direct Razorpay UPI payment.",
+      "Register for the IndiFunded Trader League to compete against Indian options and index traders with transparent scoring and UPI registration.",
     path: "/league",
   });
   const { user } = useAuth();

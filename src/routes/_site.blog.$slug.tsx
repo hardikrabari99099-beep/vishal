@@ -1,22 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { BlogDetail } from "@/views/SimplePages";
+import { buildRouteHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/_site/blog/$slug")({
-  head: () => ({
-    meta: [
-      { title: "Article — IndiFunded Blog" },
-      {
-        name: "description",
-        content: "Read this article on the IndiFunded trading blog.",
-      },
-      { property: "og:title", content: "Article — IndiFunded Blog" },
-      {
-        property: "og:description",
-        content: "Read this article on the IndiFunded trading blog.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  head: ({ params }) =>
+    buildRouteHead({
+      title: "Trading Guide & Insights | IndiFunded Blog",
+      description:
+        "Read trading evaluation insights, risk management strategies, and updates for Indian funded traders on the IndiFunded blog.",
+      path: `/blog/${params.slug}`,
+      type: "article",
+      breadcrumbs: [
+        { name: "Home", path: "/" },
+        { name: "Blog", path: "/blog" },
+        { name: "Article", path: `/blog/${params.slug}` },
+      ],
+    }),
   component: BlogDetail,
 });

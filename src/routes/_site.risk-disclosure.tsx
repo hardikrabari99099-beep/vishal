@@ -1,22 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PolicyPage } from "@/views/ExtraPages";
+import { buildRouteHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/_site/risk-disclosure")({
-  head: () => ({
-    meta: [
-      { title: "Risk Disclosure — IndiFunded" },
-      {
-        name: "description",
-        content: "Important information about the risks of trading.",
-      },
-      { property: "og:title", content: "Risk Disclosure — IndiFunded" },
-      {
-        property: "og:description",
-        content: "Important information about the risks of trading.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  head: () =>
+    buildRouteHead({
+      title: "Risk Disclosure | IndiFunded",
+      description:
+        "Read the IndiFunded trading risk disclosure outlining financial market risks, educational simulation boundaries, and trader responsibility.",
+      path: "/risk-disclosure",
+      breadcrumbs: [
+        { name: "Home", path: "/" },
+        { name: "Risk Disclosure", path: "/risk-disclosure" },
+      ],
+    }),
   component: () => <PolicyPage kind="risk" />,
 });

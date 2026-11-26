@@ -1,24 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { VerifyPayout } from "@/views/ExtraPages";
+import { buildRouteHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/_site/verify-payout")({
-  head: () => ({
-    meta: [
-      { title: "Verify a Payout — IndiFunded" },
-      {
-        name: "description",
-        content:
-          "Check any IndiFunded payout certificate by ID or trader name.",
-      },
-      { property: "og:title", content: "Verify a Payout — IndiFunded" },
-      {
-        property: "og:description",
-        content:
-          "Check any IndiFunded payout certificate by ID or trader name.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  head: () =>
+    buildRouteHead({
+      title: "Verify Payout Certificate & QR Proof | IndiFunded",
+      description:
+        "Verify any published IndiFunded trader payout by Payout ID, Certificate ID, or QR scan for transparent payout verification.",
+      path: "/verify-payout",
+      breadcrumbs: [
+        { name: "Home", path: "/" },
+        { name: "Verify Payout", path: "/verify-payout" },
+      ],
+    }),
   component: VerifyPayout,
 });

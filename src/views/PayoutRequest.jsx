@@ -30,9 +30,13 @@ const empty = {
 
 export default function PayoutRequest({ embedded = false }) {
   useSEO({
-    title: "Request Payout — IndiFunded",
-    description:
-      "Submit your payout request. Payouts are processed within 24 hours to your UPI or bank account.",
+    title: embedded
+      ? "Funded Trader Payouts & Withdrawals | IndiFunded"
+      : "Request Profit Payout via UPI or Bank | IndiFunded",
+    description: embedded
+      ? "Submit profit withdrawal requests for your IndiFunded funded trading account via UPI or bank transfer, reviewed and processed within 24 hours."
+      : "Submit a payout request for your IndiFunded funded account. Profits are verified and transferred via UPI, NEFT, or IMPS within 24 hours.",
+    path: embedded ? "/payouts" : "/payout-request",
   });
   const [form, setForm] = useState(empty);
   const [plans, setPlans] = useState([]);

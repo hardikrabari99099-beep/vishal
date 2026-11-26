@@ -48,8 +48,9 @@ export function About() {
   const { settings } = useSettings();
   const a = settings.about;
   useSEO({
-    title: "About Us — Built for Indian Traders",
-    description: a.intro.slice(0, 155),
+    title: "About IndiFunded | Proprietary Trading Firm India",
+    description:
+      "IndiFunded, operated by BRVS Education Pvt Ltd, is an Indian prop trading firm empowering disciplined Nifty and equity traders with funded trading accounts.",
     path: "/about",
   });
   return (
@@ -65,14 +66,14 @@ export function About() {
       <div className="grid md:grid-cols-3 gap-5 mt-14">
         {(a.cards || []).map((x, i) => (
           <div key={i} className="glass-card p-7">
-            <div className="font-display text-2xl">{x.t}</div>
+            <h2 className="font-display text-2xl">{x.t}</h2>
             <p className="text-sm text-[var(--muted)] mt-3 leading-relaxed">{x.d}</p>
           </div>
         ))}
       </div>
       <div className="glass-card p-10 md:p-14 mt-16 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div>
-          <h3 className="font-display text-3xl">{a.footer_title}</h3>
+          <h2 className="font-display text-3xl">{a.footer_title}</h2>
           <p className="text-[var(--muted)] mt-2 max-w-2xl">{a.footer_text}</p>
         </div>
         <Link
@@ -333,9 +334,9 @@ export function Rules() {
   const r = settings.rules || {};
   const b = settings.benefits || {};
   useSEO({
-    title: "General Rules, Challenge Structure & Funded Account Policies — IndiFunded",
+    title: "Trading Challenge Rules & Funded Policies | IndiFunded",
     description:
-      "Official IndiFunded challenge rules, 70/30 profit sharing, point calculation, supported brokers, 24-hour payouts, scaling up to ₹7,00,000, and funded account policies.",
+      "Review IndiFunded evaluation rules for Nifty and Bank Nifty option buying, 70/30 profit sharing, 20% funded max drawdown, scaling criteria, and payouts.",
     path: "/rules",
   });
   return (
@@ -753,10 +754,9 @@ export function Payouts() {
   const p = settings.payouts_page || {};
   const showForm = p.show_request_form !== false;
   useSEO({
-    title: "Payouts — Request Your Payout",
-    description: p.subtitle
-      ? p.subtitle.slice(0, 155)
-      : "Submit a payout request for your funded IndiFunded account — processed within 24 hours.",
+    title: "Funded Trader Payouts & Withdrawals | IndiFunded",
+    description:
+      "Submit profit withdrawal requests for your IndiFunded funded trading account via UPI or bank transfer, reviewed and processed within 24 hours.",
     path: "/payouts",
   });
   return (
@@ -784,21 +784,11 @@ export function Payouts() {
 export function FAQ() {
   const { settings } = useSettings();
   const groups = settings.faq_groups || [];
-  const allQA = groups.flatMap((g) => (g.items || []).map((it) => [it.q, it.a]));
   useSEO({
-    title: "FAQ — Trust, Challenge & Payouts",
+    title: "Prop Trading & Challenge FAQs India | IndiFunded",
     description:
-      "Answers about IndiFunded — SEBI status, profit targets, payout timelines, segments allowed, broker integrations and challenge rules.",
+      "Find clear answers on IndiFunded challenge rules, SEBI status, Nifty and Bank Nifty trading segments, broker integrations, scaling, and payout processing.",
     path: "/faq",
-    jsonLd: {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      mainEntity: allQA.map(([q, ans]) => ({
-        "@type": "Question",
-        name: q,
-        acceptedAnswer: { "@type": "Answer", text: ans },
-      })),
-    },
   });
   const first = groups[0]?.title;
   return (
@@ -857,9 +847,9 @@ export function Blog() {
   const { syncVersion } = useSettings();
   const [blogs, setBlogs] = useState([]);
   useSEO({
-    title: "Blog — Trading Insights, Strategies & Updates",
+    title: "Indian Prop Trading Blog & Market Guides | IndiFunded",
     description:
-      "Trading insights, prop firm strategies, and updates from IndiFunded. Learn how to maximize profits with funded accounts, manage risk, and pass the challenge.",
+      "Read trading insights, Nifty and Bank Nifty risk management guides, and funded trader program updates from the IndiFunded team.",
     path: "/blog",
   });
   useEffect(() => {
@@ -882,15 +872,22 @@ export function Blog() {
             className="glass-card hover-lift overflow-hidden block"
             data-testid={`blog-card-${i}`}
           >
-            <div
-              className="h-52 bg-cover bg-center"
-              style={{ backgroundImage: `url(${b.cover_image})` }}
-            />
+            {b.cover_image ? (
+              <img
+                src={b.cover_image}
+                alt={b.title}
+                loading="lazy"
+                decoding="async"
+                className="w-full h-52 object-cover"
+              />
+            ) : (
+              <div className="h-52 bg-[var(--bg-1)]" />
+            )}
             <div className="p-6">
               <div className="text-xs font-mono uppercase tracking-wider text-[var(--muted-2)]">
                 By {b.author}
               </div>
-              <div className="font-display text-xl mt-2 line-clamp-2">{b.title}</div>
+              <h2 className="font-display text-xl mt-2 line-clamp-2">{b.title}</h2>
               <p className="text-sm text-[var(--muted)] mt-3 line-clamp-3">{b.excerpt}</p>
             </div>
           </Link>
@@ -910,12 +907,43 @@ export function BlogDetail() {
       .then((r) => setB(r.data))
       .catch(() => setB(false));
   }, [slug, syncVersion]);
+  const articleUrl = `https://indifunded.com/blog/${slug}`;
   useSEO({
-    title: b && b.title ? b.title : "Article",
-    description: b && b.excerpt ? b.excerpt : "Trading insights from IndiFunded.",
+    title: b && b.title ? `${b.title} | IndiFunded Blog` : "Trading Guide & Insights | IndiFunded Blog",
+    description:
+      b && b.excerpt
+        ? b.excerpt
+        : "Read trading evaluation insights, risk management strategies, and updates for Indian funded traders on the IndiFunded blog.",
     path: `/blog/${slug}`,
-    image: b && b.cover_image ? b.cover_image : "/logo.jpg",
+    image: b && b.cover_image ? b.cover_image : undefined,
     type: "article",
+    jsonLd:
+      b && b.title
+        ? {
+            "@context": "https://schema.org",
+            "@type": "BlogPosting",
+            headline: b.title,
+            description: b.excerpt || b.title,
+            image: b.cover_image || "https://indifunded.com/assets/aistudio/Teal_Gradient_F_Emblem_03195f4a.png",
+            author: {
+              "@type": "Organization",
+              name: b.author || "IndiFunded Team",
+            },
+            publisher: {
+              "@type": "Organization",
+              name: "IndiFunded",
+              url: "https://indifunded.com/",
+            },
+            ...(b.created_at ? { datePublished: b.created_at } : {}),
+            ...(b.updated_at || b.created_at
+              ? { dateModified: b.updated_at || b.created_at }
+              : {}),
+            mainEntityOfPage: {
+              "@type": "WebPage",
+              "@id": articleUrl,
+            },
+          }
+        : undefined,
   });
   if (b === null) return <div className="container-xl py-24 text-[var(--muted)]">Loading…</div>;
   if (b === false)
@@ -928,7 +956,7 @@ export function BlogDetail() {
       </div>
     );
   return (
-    <div className="container-xl pt-16 pb-24 max-w-3xl">
+    <article className="container-xl pt-16 pb-24 max-w-3xl">
       <Link to="/blog" className="text-sm text-[var(--muted)] link-underline">
         ← All posts
       </Link>
@@ -939,15 +967,31 @@ export function BlogDetail() {
         By {b.author} · {new Date(b.created_at).toLocaleDateString()}
       </div>
       {b.cover_image && (
-        <div
-          className="h-80 mt-8 rounded-2xl bg-cover bg-center border border-[var(--border)]"
-          style={{ backgroundImage: `url(${b.cover_image})` }}
+        <img
+          src={b.cover_image}
+          alt={b.title}
+          decoding="async"
+          className="w-full h-80 mt-8 rounded-2xl object-cover border border-[var(--border)]"
         />
       )}
       <div className="mt-8 text-[var(--muted)] leading-relaxed whitespace-pre-wrap">
         {b.content}
       </div>
-    </div>
+      <div className="mt-12 pt-6 border-t border-[var(--border)] flex flex-wrap gap-3 text-sm">
+        <Link
+          to="/challenges"
+          className="btn-amber rounded-full px-5 py-2.5 inline-flex items-center gap-2"
+        >
+          Explore Trading Challenges <ArrowRight size={15} />
+        </Link>
+        <Link
+          to="/rules"
+          className="rounded-full px-5 py-2.5 border border-[var(--border-hi)] hover:border-[var(--accent)] transition-colors"
+        >
+          Read Challenge Rules
+        </Link>
+      </div>
+    </article>
   );
 }
 
@@ -971,8 +1015,9 @@ export function Contact() {
   const [createdTicket, setCreatedTicket] = useState(null);
 
   useSEO({
-    title: "Contact & Generate Support Ticket — IndiFunded",
-    description: `Generate a support ticket or email ${c.email} for help with challenges, KYC, payouts and trading accounts.`,
+    title: "Contact IndiFunded Support & Help Desk | IndiFunded",
+    description:
+      "Raise a support ticket or reach the IndiFunded team in Surat via email or WhatsApp for help with trading challenges, KYC, and funded account payouts.",
     path: "/contact",
   });
 

@@ -24,9 +24,9 @@ export default function Leaderboard() {
   const [loading, setLoading] = useState(true);
   const [brokenAvatars, setBrokenAvatars] = useState({});
   useSEO({
-    title: "Trader Leaderboard — Top Funded Traders on IndiFunded",
+    title: "Funded Trader Leaderboard India | IndiFunded",
     description:
-      "See India's top-performing prop traders on IndiFunded ranked by total payouts. Real traders, real profits, verified payouts.",
+      "View top-performing funded traders in India on IndiFunded ranked by verified lifetime payouts and evaluation milestones.",
     path: "/leaderboard",
   });
   useEffect(() => {

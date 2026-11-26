@@ -68,6 +68,8 @@ export default function WeeklyHighestPayout() {
                     <img
                       src={r.image_url}
                       alt={`${r.trader_name || "Trader"} payout certificate`}
+                      loading="lazy"
+                      decoding="async"
                       className="absolute inset-0 w-full h-full object-cover"
                       onError={(e) => {
                         e.currentTarget.style.display = "none";

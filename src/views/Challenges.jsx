@@ -89,21 +89,27 @@ export default function Challenges() {
   }, [searchParams]);
 
   useSEO({
-    title: "Challenge Plans, Instant Funding & 1-Step Challenge — IndiFunded",
+    title: "Trading Challenges & Funded Accounts India | IndiFunded",
     description:
-      "Choose Classic IndiFunded challenges, Instant Funding (zero evaluation, Intraday/EOD trailing drawdown), or the 1-Step Challenge (10% target, no time limit). Pay via UPI.",
+      "Compare Indian stock market trading challenges, Nifty and Bank Nifty evaluation plans, Instant Funding, and 1-Step accounts up to ₹10,00,000.",
     path: "/challenges",
     jsonLd: {
       "@context": "https://schema.org",
       "@type": "ItemList",
-      name: "IndiFunded Funding Programs",
+      name: "IndiFunded Trading Challenges & Funded Account Programs",
+      url: "https://indifunded.com/challenges",
       itemListElement: plans.map((p, i) => ({
         "@type": "Product",
         position: i + 1,
-        name: `${p.name} Challenge — ${p.account_size} INR funded account`,
+        name: `${p.name} Challenge — ${p.account_size} INR Funded Account`,
         description: p.description,
+        brand: {
+          "@type": "Brand",
+          name: "IndiFunded",
+        },
         offers: {
           "@type": "Offer",
+          url: "https://indifunded.com/challenges",
           price: p.challenge_fee,
           priceCurrency: "INR",
           availability: "https://schema.org/InStock",

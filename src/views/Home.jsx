@@ -22,6 +22,7 @@ import {
 } from "../components/HomeSections";
 import { HeroFX, Ticker } from "../components/HeroFX";
 import { useReveal } from "../lib/useReveal";
+import { useSEO } from "../lib/useSEO";
 import {
   ArrowRight,
   ShieldCheck,
@@ -56,6 +57,12 @@ export default function Home() {
     Array.isArray(h.assurances) && h.assurances.length >= 3
       ? h.assurances
       : ["Clear challenge rules", "One-time fee", "Trader support"];
+  useSEO({
+    title: "IndiFunded | Indian Trading Challenges & Funded Trader Programs",
+    description:
+      "Explore IndiFunded trading challenges designed for traders interested in Indian markets. Discover challenge rules, account options, trading objectives and program details.",
+    path: "/",
+  });
   useReveal([]);
   return (
     <div className="funded-home">

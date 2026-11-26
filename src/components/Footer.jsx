@@ -20,6 +20,7 @@ export const Footer = () => {
                 href={s.instagram}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="IndiFunded on Instagram"
                 className="p-2 rounded-full border border-[var(--border-hi)] hover:border-[var(--accent)]"
                 data-testid="social-instagram"
               >
@@ -31,6 +32,7 @@ export const Footer = () => {
                 href={s.youtube}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="IndiFunded on YouTube"
                 className="p-2 rounded-full border border-[var(--border-hi)] hover:border-[var(--accent)]"
                 data-testid="social-youtube"
               >
@@ -42,6 +44,7 @@ export const Footer = () => {
                 href={s.twitter}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="IndiFunded on X (Twitter)"
                 className="p-2 rounded-full border border-[var(--border-hi)] hover:border-[var(--accent)]"
                 data-testid="social-twitter"
               >
@@ -53,6 +56,7 @@ export const Footer = () => {
                 href={s.facebook}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="IndiFunded on Facebook"
                 className="p-2 rounded-full border border-[var(--border-hi)] hover:border-[var(--accent)]"
                 data-testid="social-facebook"
               >
@@ -64,6 +68,7 @@ export const Footer = () => {
                 href={s.whatsapp_link}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="IndiFunded on WhatsApp"
                 className="p-2 rounded-full border border-[var(--border-hi)] hover:border-[var(--accent)]"
                 data-testid="social-whatsapp"
               >
@@ -73,7 +78,7 @@ export const Footer = () => {
           </div>
         </div>
         <div>
-          <h4 className="text-sm font-semibold mb-4 text-white/90">Company</h4>
+          <h2 className="text-sm font-semibold mb-4 text-white/90">Company</h2>
           <div className="flex flex-col gap-2 text-sm text-[var(--muted)]">
             <Link to="/about" className="hover:text-white">
               About
@@ -93,7 +98,7 @@ export const Footer = () => {
           </div>
         </div>
         <div>
-          <h4 className="text-sm font-semibold mb-4 text-white/90">Traders</h4>
+          <h2 className="text-sm font-semibold mb-4 text-white/90">Traders</h2>
           <div className="flex flex-col gap-2 text-sm text-[var(--muted)]">
             <Link to="/challenges" className="hover:text-white">
               Challenges
@@ -119,7 +124,7 @@ export const Footer = () => {
           </div>
         </div>
         <div>
-          <h4 className="text-sm font-semibold mb-4 text-white/90">Contact</h4>
+          <h2 className="text-sm font-semibold mb-4 text-white/90">Contact</h2>
           <div className="text-sm text-[var(--muted)] space-y-2">
             <div className="flex gap-2 items-start">
               <span className="text-[var(--muted-2)] text-xs uppercase tracking-wider w-14 shrink-0 mt-0.5">

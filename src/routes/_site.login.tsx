@@ -1,23 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import Login from "@/views/Login";
+import { buildRouteHead } from "@/lib/seo";
 
 export const Route = createFileRoute("/_site/login")({
-  head: () => ({
-    meta: [
-      { title: "Sign In — IndiFunded" },
-      {
-        name: "description",
-        content: "Sign in or create your IndiFunded trader account.",
-      },
-      { property: "og:title", content: "Sign In — IndiFunded" },
-      {
-        property: "og:description",
-        content: "Sign in or create your IndiFunded trader account.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "robots", content: "noindex" },
-    ],
-  }),
+  head: () =>
+    buildRouteHead({
+      title: "Sign In | IndiFunded",
+      description: "Sign in or create your IndiFunded trader account.",
+      path: "/login",
+      noindex: true,
+    }),
   component: Login,
 });

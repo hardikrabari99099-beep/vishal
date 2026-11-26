@@ -2,7 +2,14 @@ User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /admin/
+Disallow: /app
+Disallow: /app/
+Disallow: /api/
 Disallow: /login
+Disallow: /forgot-password
+Disallow: /reset-password
 Disallow: /checkout/success
+Disallow: /our-traders
+Disallow: /verify/
 
-Sitemap: https://www.rubifunded.in/sitemap.xml
+Sitemap: https://indifunded.com/sitemap.xml
