@@ -20,11 +20,8 @@ describe("Compare live SSR HTML vs real getRouter() client render", () => {
     router.update({
       routeTree: (() => {
         const tree = router.routeTree;
-        (tree as { options: Record<string, unknown> }).options.shellComponent = ({
-          children,
-        }: {
-          children: React.ReactNode;
-        }) => <>{children}</>;
+        (tree as { options: Record<string, unknown> }).options.shellComponent =
+          ({ children }: { children: React.ReactNode }) => <>{children}</>;
         return tree;
       })(),
       history: createMemoryHistory({ initialEntries: ["/"] }),
