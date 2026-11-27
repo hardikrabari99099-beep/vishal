@@ -843,9 +843,23 @@ export function FAQ() {
   );
 }
 
-export function Blog() {
+function formatBlogDate(raw) {
+  if (!raw) return "";
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+export function Blog({ initialBlogs } = {}) {
   const { syncVersion } = useSettings();
-  const [blogs, setBlogs] = useState([]);
+  const [blogs, setBlogs] = useState(() =>
+    Array.isArray(initialBlogs) ? initialBlogs : [],
+  );
   useSEO({
     title: "Indian Prop Trading Blog & Market Guides | IndiFunded",
     description:
@@ -853,11 +867,17 @@ export function Blog() {
     path: "/blog",
   });
   useEffect(() => {
+    if (Array.isArray(initialBlogs)) {
+      setBlogs(initialBlogs);
+    }
+  }, [initialBlogs]);
+  useEffect(() => {
+    if (Array.isArray(initialBlogs) && syncVersion === 0) return;
     api
       .get("/blogs")
       .then((r) => setBlogs(r.data))
       .catch(() => {});
-  }, [syncVersion]);
+  }, [syncVersion, initialBlogs]);
   return (
     <div className="container-xl pt-16 pb-24">
       <div className="chip mb-4">Insights</div>
@@ -897,16 +917,23 @@ export function Blog() {
   );
 }
 
-export function BlogDetail() {
+export function BlogDetail({ initialBlog } = {}) {
   const { syncVersion } = useSettings();
   const { slug } = useParams();
-  const [b, setB] = useState(null);
+  const hasInitial = initialBlog !== undefined;
+  const [b, setB] = useState(() => (hasInitial ? initialBlog : null));
   useEffect(() => {
+    if (hasInitial) {
+      setB(initialBlog);
+    }
+  }, [hasInitial, initialBlog]);
+  useEffect(() => {
+    if (hasInitial && syncVersion === 0) return;
     api
       .get(`/blogs/${slug}`)
       .then((r) => setB(r.data))
       .catch(() => setB(false));
-  }, [slug, syncVersion]);
+  }, [slug, syncVersion, hasInitial]);
   const articleUrl = `https://indifunded.com/blog/${slug}`;
   useSEO({
     title: b && b.title ? `${b.title} | IndiFunded Blog` : "Trading Guide & Insights | IndiFunded Blog",
@@ -955,6 +982,7 @@ export function BlogDetail() {
         </Link>
       </div>
     );
+  const formattedDate = formatBlogDate(b.created_at);
   return (
     <article className="container-xl pt-16 pb-24 max-w-3xl">
       <Link to="/blog" className="text-sm text-[var(--muted)] link-underline">
@@ -964,7 +992,8 @@ export function BlogDetail() {
         {b.title}
       </h1>
       <div className="text-xs font-mono uppercase tracking-wider text-[var(--muted-2)] mt-4">
-        By {b.author} · {new Date(b.created_at).toLocaleDateString()}
+        By {b.author}
+        {formattedDate ? ` · ${formattedDate}` : ""}
       </div>
       {b.cover_image && (
         <img
