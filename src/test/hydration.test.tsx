@@ -413,4 +413,86 @@ describe("SSR hydration safety", () => {
       scrollSpy.mockRestore();
     }
   }, 15000);
+
+  it("hydrates MotionOrchestrator without attribute mismatch even when router state is pending on initial load", async () => {
+    const { MotionOrchestrator } = await import("@/components/MotionSystem");
+    const {
+      createMemoryHistory: mkHistory,
+      createRootRoute: mkRoot,
+      createRoute: mkRoute,
+      createRouter: mkRouter,
+      RouterProvider: RProvider,
+    } = await import("@tanstack/react-router");
+
+    const root = mkRoot({
+      component: () => <MotionOrchestrator />,
+    });
+    const appRoute = mkRoute({
+      getParentRoute: () => root,
+      path: "/app",
+      ssr: false,
+      component: () => null,
+    });
+    const tree = root.addChildren([appRoute]);
+
+    const ssrRouter = mkRouter({
+      routeTree: tree,
+      history: mkHistory({ initialEntries: ["/app"] }),
+    });
+    await ssrRouter.load();
+
+    const origWin = globalThis.window;
+    // @ts-expect-error simulate server environment
+    delete globalThis.window;
+    let ssrHtml = "";
+    try {
+      ssrHtml = renderToString(<RProvider router={ssrRouter} />);
+    } finally {
+      globalThis.window = origWin;
+    }
+
+    const clientRouter = mkRouter({
+      routeTree: tree,
+      history: mkHistory({ initialEntries: ["/app"] }),
+    });
+    await clientRouter.load();
+    // Simulate pending router state during initial hydration (as happens on ssr: false routes)
+    clientRouter.stores.status.set("pending");
+
+    const container = document.createElement("div");
+    container.innerHTML = ssrHtml;
+    document.body.appendChild(container);
+
+    const recoverableErrors: unknown[] = [];
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    let hydratedRoot: ReturnType<typeof hydrateRoot> | null = null;
+    try {
+      await act(async () => {
+        hydratedRoot = hydrateRoot(
+          container,
+          <RProvider router={clientRouter} />,
+          {
+            onRecoverableError: (err) => {
+              recoverableErrors.push(err);
+            },
+          },
+        );
+      });
+
+      const hydrationErrors = errorSpy.mock.calls.filter((args) =>
+        args.some((a) => /hydrat|didn't match/i.test(String(a))),
+      );
+      expect(recoverableErrors).toEqual([]);
+      expect(hydrationErrors).toEqual([]);
+      const loadingBar = container.querySelector(".route-loading-bar");
+      expect(loadingBar?.classList.contains("is-loading")).toBe(true);
+    } finally {
+      errorSpy.mockRestore();
+      await act(async () => {
+        hydratedRoot?.unmount();
+      });
+      container.remove();
+    }
+  });
 });

@@ -96,9 +96,11 @@ export function MotionOrchestrator() {
   const isRoutePending = typeof useRouterLoading === "function" ? useRouterLoading() : false;
   const prevPathRef = useRef(loc.pathname);
   const [navState, setNavState] = useState("idle"); // idle | active
+  const [hydrated, setHydrated] = useState(false);
   const [fxCfg, setFxCfg] = useState(() => ({ ...DEFAULT_FX_CONFIG }));
 
   useEffect(() => {
+    setHydrated(true);
     setFxCfg(getFxConfig());
     return subscribeWidgetsConfig(({ fx }) => {
       if (fx) setFxCfg(fx);
@@ -392,7 +394,7 @@ export function MotionOrchestrator() {
     };
   }, [fxCfg.cursor_glow, fxCfg.tilt_3d, loc.pathname]);
 
-  const isBarActive = navState === "active" || isRoutePending;
+  const isBarActive = hydrated && (navState === "active" || isRoutePending);
 
   return (
     <>
